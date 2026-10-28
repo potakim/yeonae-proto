@@ -14,6 +14,20 @@ npm run build    # dist/ 생성
 
 Node 18 이상.
 
+### Claude 해석 연결 (테스트)
+
+```bash
+cp .env.example .env.local   # ANTHROPIC_API_KEY 입력
+npm run dev                  # 만세력 결과 아래 "무당에게 풀이 듣기"
+```
+
+- `api/interpret.ts` 하나가 Vercel 함수이자 로컬 개발 API예요 (`vite.config.ts`의 개발 미들웨어가 같은 파일을 불러 씀).
+- 키는 서버에서만 읽어요 (`VITE_` 접두사 없음 → 브라우저 번들에 안 들어감).
+- 모델 기본값 `claude-sonnet-5-5`, `ANTHROPIC_MODEL`로 변경. 응답은 스트리밍, 끝에 토큰 사용량 표시.
+- `INTERPRET_ACCESS_CODE`를 넣으면 화면의 "테스트 설정"에 같은 코드를 입력해야 호출돼요. Vercel 공개 URL에선 꼭 설정하세요.
+- 풀이 주제 2종: 타고난 연애 성향 / 지금의 연애운(대운·세운·월운). 선택 질문 1개(300자).
+- **프로토타입 한정**: 원국 JSON은 브라우저에서 계산해 보내요. 실서비스에선 서버가 생년월일시를 받아 직접 계산해야 해요.
+
 ## Vercel 배포
 
 둘 중 편한 방법으로.
@@ -31,7 +45,14 @@ src/
   lib/
     saju.ts                    만세력 계산 래퍼 (manseryeok@2.0.0 고정)
                                - 시간 모름 처리, 절입일 후보 경고, 진태양시 보정 비교
-                               - 오행 분포, LLM 입력용 JSON(toLlmPayload)
+                               - 오행 분포, LLM 입력용 JSON(toLlmPayload, schema v2)
+    saju-analysis.ts           결정적 파생 계산: 지장간, 12운성, 합충형파해·원진·자형·삼합/반합/방합,
+                               신살(도화·역마·화개·홍염·천을귀인·양인·괴강·백호), 간이 신강약
+    vendor/korea-time.ts       진태양시 보정 시각 (manseryeok 내부 로직 이식, MIT) — 기록·표시용
+  components/
+    InterpretPanel.tsx         Claude 풀이 요청·스트리밍 표시·AI 고지
+api/
+  interpret.ts                 POST /api/interpret (Vercel 함수 + 로컬 개발 API)
     personality/
       questions.ts             자체 문항 32개 (+ 빠른 모드 16개)
       scoring.ts               채점 로직, LLM 입력용 JSON
@@ -57,6 +78,24 @@ src/
 > 실서비스 전에는 KASI 데이터나 검증된 상용 만세력과 대조한 자체 골든셋(절입 경계, 23시대 출생,
 > 1948~1988년 서머타임 기간 출생 등)을 추가하는 것을 권장합니다.
 
+## 원국 JSON v2 (`modu-yeonae.saju.v2`)
+
+v1 대비 바뀐 점 — LLM이 지어내기 쉬운 값을 전부 코드에서 계산해 넘긴다.
+
+| 항목 | 내용 |
+|---|---|
+| `input`, `correctedTime` | 입력 시각 원본과 진태양시 보정 결과(경도·균시차·서머타임 내역) — 재현·디버깅용 |
+| `pillars.*.branch` | `yinYangPosition`(자리 음양)과 `mainQi`(정기)를 분리, 지장간 `hiddenStems`(십신 포함) |
+| `pillars.*.twelveStage` | 일간 기준 12운성 |
+| `relations` | 천간합·충, 육합·충·형·파·해·원진·자형·삼합·반합·방합·삼형 (같은 조합은 한 건으로 묶음, 인접 여부) |
+| `specialStars` | 대표 신살과 판단 기준(`basis`) |
+| `strength` | 간이 신강약 + 득령·득지·득세, 계산 방식(`method`) 명시 |
+| `luckPillars.list` | 대운별 실제 시작·종료일, 만 나이, 십신, 12운성, `current` |
+| `now` | 현재 대운·올해 세운·이번 달 월운과 원국의 관계 |
+| `voidBranches` | 일주·연주 기준 공망, 원국 해당 여부 |
+
+검증: `src/lib/__tests__/payload.test.ts` (1979-01-27 갑오 일주 케이스, 12운성·합충 표, 보정 시각 ↔ 엔진 시주 일치).
+
 ## 성격유형 테스트 — 설계
 
 - **문항은 전부 자체 작성**. 공식 MBTI® 문항, OEJTS(CC BY-NC-SA, 비상업 라이선스) 문항은 사용하지 않음.
@@ -77,4 +116,5 @@ src/
 - TDS(WebView용) 컴포넌트로 UI 교체, 상단 바는 토스 내비게이션 바 사용 (자체 상단 바 제거)
 - 토스 로그인 연동 (결과 저장이 필요해지는 시점)
 - LLM 호출은 자체 백엔드에서 (API 키를 프론트에 두지 않음) + 생성형 AI 고지·라벨 표시
+  → 프로토타입은 `api/interpret.ts`로 구현됨. 실서비스에선 서버 재계산·사용자별 호출 제한·결과 캐시 추가
 - Pretendard 웹폰트 CDN 사용 여부 검수 확인 (안 되면 번들에 포함하거나 시스템 폰트 사용)

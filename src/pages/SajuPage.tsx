@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import InterpretPanel from '../components/InterpretPanel';
 import type { DayBoundary, FiveElement, Gender } from 'manseryeok';
 import {
   BIRTH_PLACES,
@@ -213,7 +214,8 @@ export default function SajuPage() {
 function SajuResultView({ r }: { r: SajuResult }) {
   const d = r.detail;
   const total = Object.values(r.elementCounts).reduce((a, b) => a + b, 0);
-  const payload = toLlmPayload(r);
+  // 렌더마다 새로 만들면 풀이 패널이 초기화되므로 결과가 바뀔 때만 계산
+  const payload = useMemo(() => toLlmPayload(r), [r]);
 
   return (
     <div className="stack" id="saju-result">
@@ -263,12 +265,17 @@ function SajuResultView({ r }: { r: SajuResult }) {
                       <span className="char-han">{d[`${key}Hanja` as const][1]}</span>
                     </div>
                     <div className="tengod">{tg.branch}</div>
+                    <div className="hidden-stems" title="지장간">
+                      {payload.pillars[key]?.branch.hiddenStems.map((h) => h.stem).join(' ')}
+                    </div>
+                    <div className="stage">{payload.pillars[key]?.twelveStage}</div>
                   </>
                 )}
               </div>
             );
           })}
         </div>
+        <p className="pillar-legend">윗줄 천간 십신 · 아랫줄 지지 십신 · 지장간 · 12운성</p>
         <p className="day-master">
           일간(나): <strong>{d.day.heavenlyStem}</strong> · {d.dayYinYang.stem}
           {d.dayElement.stem}
@@ -313,8 +320,53 @@ function SajuResultView({ r }: { r: SajuResult }) {
       </section>
 
       <section className="card">
-        <h3 className="card-title">공망</h3>
-        <p>{d.voidBranches.join(', ')}</p>
+        <h3 className="card-title">구조 한눈에 보기</h3>
+        <dl className="facts">
+          <dt>신강약</dt>
+          <dd>
+            {payload.strength.verdict} <span className="muted">(돕는 힘 {Math.round(payload.strength.supportRatio * 100)}%
+            · 득령 {payload.strength.deukryeong ? 'O' : 'X'} · 득지 {payload.strength.deukji ? 'O' : 'X'} · 득세{' '}
+            {payload.strength.deukse ? 'O' : 'X'})</span>
+          </dd>
+          <dt>십신 분포</dt>
+          <dd>
+            {Object.entries(payload.tenGodCounts.counts)
+              .map(([k, v]) => `${k} ${v}`)
+              .join(' · ')}
+          </dd>
+          <dt>계절</dt>
+          <dd>
+            {payload.season.label} ({payload.season.monthBranch}월)
+            {payload.elementCounts.missing.length > 0 && ` · 없는 오행: ${payload.elementCounts.missing.join(', ')}`}
+          </dd>
+          <dt>합충형파해</dt>
+          <dd>
+            {payload.relations.length === 0
+              ? '없음'
+              : payload.relations.map((rel) => (
+                  <span key={rel.type + rel.where.join()} className="tag">
+                    {rel.type} {[...new Set(rel.chars)].join('')}
+                    {rel.result ? `→${rel.result}` : ''} <span className="muted">({rel.where.join('·')})</span>
+                  </span>
+                ))}
+          </dd>
+          <dt>신살</dt>
+          <dd>
+            {payload.specialStars.length === 0
+              ? '없음'
+              : payload.specialStars.map((st) => (
+                  <span key={st.name + st.char} className="tag">
+                    {st.name} {st.char} <span className="muted">({st.where.join('·')})</span>
+                  </span>
+                ))}
+          </dd>
+          <dt>공망</dt>
+          <dd>
+            일주 기준 {payload.voidBranches.byDayPillar.join('')} · 연주 기준 {payload.voidBranches.byYearPillar.join('')}
+            {payload.voidBranches.inNatal.length > 0 && ` · 원국 해당: ${payload.voidBranches.inNatal.join(', ')}`}
+          </dd>
+        </dl>
+        <p className="hint">신강약은 간이 점수예요. 신살은 학파마다 기준이 달라 대표적인 것만 표시해요.</p>
       </section>
 
       {d.luckPillars && (
@@ -323,18 +375,22 @@ function SajuResultView({ r }: { r: SajuResult }) {
             대운 · {d.luckPillars.forward ? '순행' : '역행'} · 대운수 {d.luckPillars.startAge}
           </h3>
           <div className="luck-scroll">
-            {d.luckPillars.pillars.map((p) => (
-              <div key={p.age} className="luck-item">
-                <div className="luck-age">{p.age}세</div>
-                <div className="luck-ganji">{p.korean}</div>
+            {payload.luckPillars!.list.map((p) => (
+              <div key={p.startDate} className={`luck-item ${p.current ? 'luck-current' : ''}`}>
+                <div className="luck-age">{p.label}</div>
+                <div className="luck-ganji">{p.ganji}</div>
+                <div className="luck-age">{p.startDate.slice(0, 4)}~</div>
               </div>
             ))}
           </div>
           <p className="hint">
-            정밀값: {d.luckPillars.startYears}년 {d.luckPillars.startMonths}개월 {d.luckPillars.startDays}일
+            첫 대운 시작 {payload.luckPillars!.firstStartDate} (출생 후 {d.luckPillars.startYears}년 {d.luckPillars.startMonths}개월{' '}
+            {d.luckPillars.startDays}일) · 올해 세운 {payload.now.annual.ganji} · 이번 달 {payload.now.monthly.ganji}
           </p>
         </section>
       )}
+
+      <InterpretPanel key={JSON.stringify(payload.input)} payload={payload} />
 
       <details className="card dev">
         <summary>개발용 · LLM 해석 단계에 넘길 데이터</summary>

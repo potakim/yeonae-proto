@@ -741,3 +741,117 @@ select:disabled {
     grid-template-columns: 76px 1fr 76px;
   }
 }
+
+/* ── v2: 지장간 · 12운성 · 구조 요약 ── */
+.hidden-stems {
+  font-size: 11px;
+  color: var(--text-3);
+  letter-spacing: 1px;
+  height: 14px;
+}
+.stage {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 2px 8px;
+}
+.pillar-legend {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-3);
+  margin: 10px 0 0;
+}
+.facts {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 10px 12px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.facts dt {
+  color: var(--text-3);
+  font-weight: 600;
+}
+.facts dd {
+  margin: 0;
+  min-width: 0;
+}
+.muted {
+  color: var(--text-3);
+  font-size: 12px;
+}
+.tag {
+  display: inline-block;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 2px 8px;
+  margin: 0 4px 4px 0;
+  font-size: 13px;
+}
+.luck-current {
+  background: var(--blue-weak);
+  outline: 2px solid var(--blue);
+}
+
+/* ── 해석 패널 ── */
+.interpret {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.question,
+.text-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  font: inherit;
+  font-size: 15px;
+  resize: vertical;
+  background: #fff;
+}
+.reading {
+  background: #fbf8ff;
+  border: 1px solid #ece4fb;
+  border-radius: 14px;
+  padding: 4px 16px 12px;
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--text);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.reading h4 {
+  font-size: 16px;
+  margin: 16px 0 4px;
+  color: #6b3fc4;
+}
+.reading p {
+  margin: 4px 0;
+}
+.reading ul {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+.cursor {
+  display: inline-block;
+  width: 8px;
+  height: 16px;
+  background: #6b3fc4;
+  vertical-align: text-bottom;
+  animation: blink 1s steps(2) infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+.ai-label {
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.6;
+  margin: 0;
+}

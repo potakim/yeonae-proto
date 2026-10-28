@@ -1,7 +1,12 @@
 import {
   calculateFourPillars,
+  getVoidBranches,
+  type EarthlyBranch,
+  type HeavenlyStem,
   getHeavenlyStemElement,
   getEarthlyBranchElement,
+  getTenGod,
+  getBranchTenGod,
   lunarToSolar,
   type BirthInfo,
   type DayBoundary,
@@ -9,6 +14,21 @@ import {
   type FourPillarsDetail,
   type Gender,
 } from 'manseryeok';
+import {
+  POSITION_LABEL,
+  SEASON,
+  TEN_GOD_GROUP,
+  branchRelations,
+  hiddenStemsOf,
+  judgeStrength,
+  specialStars,
+  stemRelations,
+  twelveStage,
+  type Placed,
+  type Position,
+  type TenGodGroup,
+} from './saju-analysis';
+import { toTrueSolarTime } from './vendor/korea-time';
 
 /** 출생지 경도 프리셋 (동경, 시청 기준 근사값) */
 export const BIRTH_PLACES: { name: string; longitude: number | null }[] = [
@@ -177,47 +197,221 @@ export function calculateSaju(input: SajuInput): SajuResult {
   };
 }
 
-/** LLM 해석 단계에 넘길 구조화 데이터 (계산은 코드, 해석만 LLM) */
-export function toLlmPayload(r: SajuResult) {
+/* ───────────────────────── LLM 입력 데이터 (v2) ───────────────────────── */
+
+export const SAJU_SCHEMA = 'modu-yeonae.saju.v2';
+export const ENGINE = 'manseryeok@2.0.0';
+
+type Ymd = { year: number; month: number; day: number };
+
+/** 한국 시간 기준 오늘 날짜 */
+export function todayKst(now: Date = new Date()): Ymd {
+  const k = new Date(now.getTime() + 9 * 3600000);
+  return { year: k.getUTCFullYear(), month: k.getUTCMonth() + 1, day: k.getUTCDate() };
+}
+
+const ymdStr = (d: Ymd) => `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`;
+const cmp = (a: Ymd, b: Ymd) => (a.year - b.year) * 10000 + (a.month - b.month) * 100 + (a.day - b.day);
+
+function addYmd(d: Ymd, years: number, months: number, days: number): Ymd {
+  const t = new Date(Date.UTC(d.year + years, d.month - 1 + months, d.day + days));
+  return { year: t.getUTCFullYear(), month: t.getUTCMonth() + 1, day: t.getUTCDate() };
+}
+
+/** 만 나이 */
+function fullAge(birth: Ymd, at: Ymd): number {
+  return at.year - birth.year - (at.month * 100 + at.day < birth.month * 100 + birth.day ? 1 : 0);
+}
+
+/**
+ * 해석 단계(LLM)에 넘길 구조화 데이터. 계산은 전부 여기서 끝내고 LLM 은 해석만 한다.
+ * @param referenceDate 대운·세운·월운의 "지금" 기준일 (기본: 오늘 KST)
+ */
+export function toLlmPayload(r: SajuResult, referenceDate: Ymd = todayKst()) {
   const d = r.detail;
-  const pillar = (key: PillarKey) =>
-    key === 'hour' && !r.hourKnown
-      ? null
-      : {
-          ganji: pillarString(d, key),
-          hanja: d[`${key}Hanja` as const],
-          stem: { char: d[key].heavenlyStem, element: d[`${key}Element` as const].stem, yinYang: d[`${key}YinYang` as const].stem },
-          branch: { char: d[key].earthlyBranch, element: d[`${key}Element` as const].branch, yinYang: d[`${key}YinYang` as const].branch },
-          tenGods: d.tenGods[key],
-        };
+  const dm = d.day.heavenlyStem;
+  const keys = (['year', 'month', 'day', 'hour'] as const).filter((k) => k !== 'hour' || r.hourKnown);
+
+  const pillar = (key: PillarKey) => {
+    if (key === 'hour' && !r.hourKnown) return null;
+    const branch = d[key].earthlyBranch;
+    const hidden = hiddenStemsOf(dm, branch);
+    return {
+      ganji: pillarString(d, key),
+      hanja: d[`${key}Hanja` as const],
+      stem: {
+        char: d[key].heavenlyStem,
+        element: d[`${key}Element` as const].stem,
+        yinYang: d[`${key}YinYang` as const].stem,
+        tenGod: key === 'day' ? '일간' : d.tenGods[key].stem,
+      },
+      branch: {
+        char: branch,
+        element: d[`${key}Element` as const].branch,
+        /** 지지 자리(체) 음양. 십신 판단에는 쓰지 말 것 → mainQi 기준 */
+        yinYangPosition: d[`${key}YinYang` as const].branch,
+        /** 정기(본기). 지지 십신은 이 글자 기준 */
+        mainQi: hidden[hidden.length - 1].stem,
+        tenGod: d.tenGods[key].branch,
+        hiddenStems: hidden,
+      },
+      /** 12운성: 일간이 이 지지에서 갖는 기운 (봉법) */
+      twelveStage: twelveStage(dm, branch),
+    };
+  };
+
+  // 원국 글자 배치
+  const natalStems: Placed<HeavenlyStem>[] = keys.map((k) => ({ pos: k, char: d[k].heavenlyStem }));
+  const natalBranches: Placed<EarthlyBranch>[] = keys.map((k) => ({ pos: k, char: d[k].earthlyBranch }));
+  const natalFull = keys.map((k) => ({ pos: k, stem: d[k].heavenlyStem, branch: d[k].earthlyBranch }));
+
+  // 십신 분포 (천간 + 지지 정기, 일간 제외)
+  const tenGodCounts: Record<TenGodGroup, number> = { 비겁: 0, 식상: 0, 재성: 0, 관성: 0, 인성: 0 };
+  for (const k of keys) {
+    if (k !== 'day') tenGodCounts[TEN_GOD_GROUP[d.tenGods[k].stem]] += 1;
+    tenGodCounts[TEN_GOD_GROUP[d.tenGods[k].branch]] += 1;
+  }
+
+  // 대운 타임라인 (실제 날짜 기준)
+  const birth = r.solarDate;
+  const lp = d.luckPillars;
+  let luck = null;
+  let currentLuck: { ganji: string; stem: HeavenlyStem; branch: EarthlyBranch } | null = null;
+  if (lp) {
+    const firstStart = addYmd(birth, lp.startYears, lp.startMonths, lp.startDays);
+    const list = lp.pillars.map((p, i) => {
+      const start = addYmd(firstStart, i * 10, 0, 0);
+      const end = addYmd(start, 10, 0, -1);
+      const current = cmp(referenceDate, start) >= 0 && cmp(referenceDate, end) <= 0;
+      if (current) currentLuck = { ganji: p.korean, stem: p.pillar.heavenlyStem, branch: p.pillar.earthlyBranch };
+      return {
+        ganji: p.korean,
+        /** 대운수 표기(엔진 반올림값, 관례상 표시용) */
+        label: `${p.age}대운`,
+        startDate: ymdStr(start),
+        endDate: ymdStr(end),
+        ageAtStart: `만 ${lp.startYears + i * 10}세 ${lp.startMonths}개월`,
+        stemTenGod: getTenGod(dm, p.pillar.heavenlyStem),
+        branchTenGod: getBranchTenGod(dm, p.pillar.earthlyBranch),
+        twelveStage: twelveStage(dm, p.pillar.earthlyBranch),
+        current,
+      };
+    });
+    luck = {
+      direction: lp.forward ? 'forward' : 'backward',
+      startAge: lp.startAge,
+      startAgeBasis: '대운수(절입까지 일수÷3 반올림). 실제 시작 시점은 firstStartDate 기준',
+      firstStartDate: ymdStr(firstStart),
+      precise: { years: lp.startYears, months: lp.startMonths, days: lp.startDays },
+      list,
+    };
+  }
+
+  // 세운·월운 (기준일의 연주·월주 = 입춘·절입 기준)
+  const ref = calculateFourPillars({ ...referenceDate, hour: 12, minute: 0 });
+  const flow = (pos: Position, stem: HeavenlyStem, branch: EarthlyBranch) => ({
+    ganji: stem + branch,
+    stemTenGod: getTenGod(dm, stem),
+    branchTenGod: getBranchTenGod(dm, branch),
+    twelveStage: twelveStage(dm, branch),
+    relationsWithNatal: groupRelations([
+      ...stemRelations([...natalStems, { pos, char: stem }], pos),
+      ...branchRelations([...natalBranches, { pos, char: branch }], pos),
+    ]).map(describe),
+  });
+  const cl = currentLuck as { ganji: string; stem: HeavenlyStem; branch: EarthlyBranch } | null;
+
+  const strength = judgeStrength(dm, natalFull);
+  const missing = ELEMENTS.filter((e) => r.elementCounts[e] === 0);
 
   return {
-    schema: 'modu-yeonae.saju.v1',
-    engine: 'manseryeok@2.0.0',
-    options: {
+    schema: SAJU_SCHEMA,
+    engine: ENGINE,
+    referenceDate: ymdStr(referenceDate),
+    input: {
       calendar: r.input.isLunar ? (r.input.isLeapMonth ? 'lunar-leap' : 'lunar') : 'solar',
-      trueSolarTime: r.input.useTrueSolarTime,
-      longitude: r.input.longitude ?? 127.5,
-      dayBoundary: r.input.dayBoundary,
+      date: { year: r.input.year, month: r.input.month, day: r.input.day },
+      time: r.hourKnown ? `${String(r.input.hour).padStart(2, '0')}:${String(r.input.minute).padStart(2, '0')}` : null,
       hourKnown: r.hourKnown,
+      gender: r.input.gender,
+      longitude: r.input.longitude ?? 127.5,
+      trueSolarTime: r.input.useTrueSolarTime,
+      dayBoundary: r.input.dayBoundary,
     },
     solarBirthDate: r.solarDate,
-    gender: r.input.gender,
-    dayMaster: { stem: d.day.heavenlyStem, element: d.dayElement.stem, yinYang: d.dayYinYang.stem },
+    correctedTime:
+      r.hourKnown && r.input.useTrueSolarTime
+        ? toTrueSolarTime(r.solarDate.year, r.solarDate.month, r.solarDate.day, r.input.hour!, r.input.minute, r.input.longitude ?? 127.5)
+        : null,
+    ageNow: fullAge(birth, referenceDate),
+    dayMaster: { stem: dm, element: d.dayElement.stem, yinYang: d.dayYinYang.stem },
     pillars: {
       year: pillar('year'),
       month: pillar('month'),
       day: pillar('day'),
       hour: pillar('hour'),
     },
-    elementCounts: r.elementCounts,
-    voidBranches: d.voidBranches,
-    luckPillars: d.luckPillars
-      ? {
-          direction: d.luckPillars.forward ? 'forward' : 'backward',
-          startAge: d.luckPillars.startAge,
-          list: d.luckPillars.pillars.map((p) => ({ age: p.age, ganji: p.korean })),
-        }
-      : null,
+    season: { monthBranch: d.month.earthlyBranch, label: SEASON[d.month.earthlyBranch] },
+    elementCounts: {
+      basis: r.hourKnown ? '천간·지지 8글자 단순 개수' : '시주 제외 6글자 단순 개수',
+      counts: r.elementCounts,
+      missing,
+    },
+    tenGodCounts: { basis: '천간 + 지지 정기 기준, 일간 제외', counts: tenGodCounts },
+    strength,
+    relations: groupRelations([...stemRelations(natalStems), ...branchRelations(natalBranches)]).map(describe),
+    specialStars: specialStars(dm, natalFull).map((s) => ({
+      ...s,
+      where: s.positions.map((p) => POSITION_LABEL[p]),
+    })),
+    voidBranches: {
+      byDayPillar: d.voidBranches,
+      byYearPillar: getVoidBranches(d.year.heavenlyStem, d.year.earthlyBranch),
+      inNatal: natalBranches.filter((b) => d.voidBranches.includes(b.char)).map((b) => POSITION_LABEL[b.pos]),
+    },
+    luckPillars: luck,
+    now: {
+      luck: cl ? flow('luck', cl.stem, cl.branch) : null,
+      annual: flow('annual', ref.year.heavenlyStem, ref.year.earthlyBranch),
+      monthly: flow('monthly', ref.month.heavenlyStem, ref.month.earthlyBranch),
+    },
+    warnings: r.warnings,
+  };
+}
+
+export type SajuPayload = ReturnType<typeof toLlmPayload>;
+
+type Rel = ReturnType<typeof branchRelations>[number];
+
+/** 같은 종류·같은 글자 조합이 여러 자리에서 반복되면 하나로 묶는다 (예: 丑 1개 + 午 3개 → 축오 해 1건) */
+function groupRelations(rels: Rel[]): Rel[] {
+  const out: Rel[] = [];
+  for (const r of rels) {
+    const sig = `${r.type}|${[...new Set(r.chars)].sort().join('')}`;
+    const prev = out.find((o) => `${o.type}|${[...new Set(o.chars)].sort().join('')}` === sig);
+    if (!prev) {
+      out.push({ ...r, positions: [...r.positions], chars: [...r.chars] });
+      continue;
+    }
+    for (let i = 0; i < r.positions.length; i++) {
+      if (!prev.positions.includes(r.positions[i])) {
+        prev.positions.push(r.positions[i]);
+        prev.chars.push(r.chars[i]);
+      }
+    }
+    prev.adjacent = Boolean(prev.adjacent || r.adjacent);
+    prev.note = `${[...new Set(prev.chars)].map((c) => `${c} ${prev.chars.filter((x) => x === c).length}개`).join(' · ')}가 서로 맞물림`;
+  }
+  return out;
+}
+
+function describe(rel: Rel) {
+  return {
+    type: rel.type,
+    chars: rel.chars.join(''),
+    where: rel.positions.map((p) => POSITION_LABEL[p]),
+    ...(rel.result ? { result: rel.result } : {}),
+    ...(rel.adjacent !== undefined ? { adjacent: rel.adjacent } : {}),
+    ...(rel.note ? { note: rel.note } : {}),
   };
 }
