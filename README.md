@@ -14,19 +14,29 @@ npm run build    # dist/ 생성
 
 Node 18 이상.
 
-### Claude 해석 연결 (테스트)
+### 운세·풀이 (계산 → 신호 → 문장)
+
+```
+① 계산 (코드)   src/lib/saju.ts, saju-analysis.ts        원국 · 대운 · 지장간 · 12운성 · 합충 · 신살
+② 신호 (코드)   src/lib/fortune/signals.ts               오늘 일진 · 7일 · 세운/대운/월운 12개 → 점수·등급·근거
+   기준        src/lib/fortune/criteria.ts              십신·관계·오행 의미표와 점수 (docs/interpretation-criteria.md)
+③ 문장 (LLM)   src/lib/fortune/reading.ts + api/fortune.ts   ①②만 근거로 JSON 구조 출력
+```
 
 ```bash
 cp .env.example .env.local   # ANTHROPIC_API_KEY 입력
-npm run dev                  # 만세력 결과 아래 "무당에게 풀이 듣기"
+npm run dev                  # 사주 원국 → 아래 "운세 · 무당 풀이" (오늘/이번 주/올해/원국 풀이)
+npm run criteria:doc         # criteria.ts 를 바꾼 뒤 기준 문서 재생성
 ```
 
-- `api/interpret.ts` 하나가 Vercel 함수이자 로컬 개발 API예요 (`vite.config.ts`의 개발 미들웨어가 같은 파일을 불러 씀).
-- 키는 서버에서만 읽어요 (`VITE_` 접두사 없음 → 브라우저 번들에 안 들어감).
-- 모델 기본값 `claude-sonnet-5-5`, `ANTHROPIC_MODEL`로 변경. 응답은 스트리밍, 끝에 토큰 사용량 표시.
-- `INTERPRET_ACCESS_CODE`를 넣으면 화면의 "테스트 설정"에 같은 코드를 입력해야 호출돼요. Vercel 공개 URL에선 꼭 설정하세요.
-- 풀이 주제 2종: 타고난 연애 성향 / 지금의 연애운(대운·세운·월운). 선택 질문 1개(300자).
-- **프로토타입 한정**: 원국 JSON은 브라우저에서 계산해 보내요. 실서비스에선 서버가 생년월일시를 받아 직접 계산해야 해요.
+- **서버가 직접 계산**: `/api/fortune`은 생년월일을 받아 서버에서 ①②를 다시 계산해요. 화면의 신호 표시는 같은 코드를 브라우저에서 돌린 것.
+- **오늘**: 한국 시간 기준, 자시 관법 반영(자시 기준이면 23시부터 다음날 일진). **올해**: 입춘부터 세운, 월운은 절입 기준 12개월.
+- **점수**: 십신·이성의 별·원국 관계(일간·일지 직접이면 가중)·공망·도화/홍염 활성·오행 보완/과다 → 등급. LLM은 등급 방향만 따르고 숫자는 말하지 않음.
+- **출력**: structured outputs(JSON 스키마) — `{headline, summary, love, caution, lucky{item, action}, closing}` + 주간 `days[]`, 올해 `luckFlow, months[]`, 원국 `personality, loveStyle, goodMatch`. 행운 아이템은 스키마 enum으로 코드가 정한 목록 안에서만.
+- **캐시**: 키 = SHA-256(종류 · 원국 간지 · 성별 · 기간 · 프롬프트 버전 · 기준 버전 · 모델 · 캐릭터). 생년월일 원본은 키에 없음. 프로토타입은 인스턴스 메모리 캐시 → 실서비스는 `ReadingCache` 인터페이스로 KV/Redis 교체.
+- **공용 오늘의 운세**: 일주 60 × 성별 2 = 하루 120건이면 전 사용자 공유. (일간 10개 기준이면 일지 충·합이 빠져서 연애 앱엔 일주 기준 권장)
+- **미리보기(dryRun)**: 화면 "테스트 설정"에서 켜면 Claude 호출 없이 프롬프트·스키마·캐시 키만 받아요. 키 없이도 확인 가능.
+- 모델 기본 `claude-sonnet-5-5` (`ANTHROPIC_MODEL`), 공개 URL엔 `INTERPRET_ACCESS_CODE` 필수 권장.
 
 ## Vercel 배포
 
@@ -49,10 +59,16 @@ src/
     saju-analysis.ts           결정적 파생 계산: 지장간, 12운성, 합충형파해·원진·자형·삼합/반합/방합,
                                신살(도화·역마·화개·홍염·천을귀인·양인·괴강·백호), 간이 신강약
     vendor/korea-time.ts       진태양시 보정 시각 (manseryeok 내부 로직 이식, MIT) — 기록·표시용
+    fortune/
+      criteria.ts              해석 기준(의미·점수·행운 매핑) + 버전
+      signals.ts               일진·주간·세운·대운·월운 신호와 점수
+      reading.ts               LLM 입력 묶음·프롬프트·출력 스키마·캐시 키 (서버·브라우저 공용)
   components/
-    InterpretPanel.tsx         Claude 풀이 요청·스트리밍 표시·AI 고지
+    FortunePanel.tsx           오늘/이번 주/올해/원국 탭, 신호 카드, 풀이 카드, AI 고지
 api/
-  interpret.ts                 POST /api/interpret (Vercel 함수 + 로컬 개발 API)
+  fortune.ts                   POST /api/fortune (Vercel 함수 + 로컬 개발 API), 캐시
+docs/
+  interpretation-criteria.md   해석 기준 문서 (자동 생성)
     personality/
       questions.ts             자체 문항 32개 (+ 빠른 모드 16개)
       scoring.ts               채점 로직, LLM 입력용 JSON
@@ -116,5 +132,6 @@ v1 대비 바뀐 점 — LLM이 지어내기 쉬운 값을 전부 코드에서 �
 - TDS(WebView용) 컴포넌트로 UI 교체, 상단 바는 토스 내비게이션 바 사용 (자체 상단 바 제거)
 - 토스 로그인 연동 (결과 저장이 필요해지는 시점)
 - LLM 호출은 자체 백엔드에서 (API 키를 프론트에 두지 않음) + 생성형 AI 고지·라벨 표시
-  → 프로토타입은 `api/interpret.ts`로 구현됨. 실서비스에선 서버 재계산·사용자별 호출 제한·결과 캐시 추가
+  → 프로토타입은 `api/fortune.ts`로 구현됨(서버 재계산·캐시 포함). 실서비스에선 영구 캐시(KV), 사용자별 호출 제한, 공용 운세 사전 생성(크론) 추가
+- `api/` → `src/lib` 상대 import 는 `.js` 확장자를 붙여 둠 (Vercel 의 ESM 트랜스파일 실행 대비, 검증함)
 - Pretendard 웹폰트 CDN 사용 여부 검수 확인 (안 되면 번들에 포함하거나 시스템 폰트 사용)

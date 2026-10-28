@@ -4,6 +4,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/interpret.ts": { "maxDuration": 120 }
+    "api/fortune.ts": { "maxDuration": 120 }
   }
 }

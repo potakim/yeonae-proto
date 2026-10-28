@@ -27,8 +27,8 @@ import {
   type Placed,
   type Position,
   type TenGodGroup,
-} from './saju-analysis';
-import { toTrueSolarTime } from './vendor/korea-time';
+} from './saju-analysis.js';
+import { toTrueSolarTime } from './vendor/korea-time.js';
 
 /** 출생지 경도 프리셋 (동경, 시청 기준 근사값) */
 export const BIRTH_PLACES: { name: string; longitude: number | null }[] = [
@@ -317,7 +317,7 @@ export function toLlmPayload(r: SajuResult, referenceDate: Ymd = todayKst()) {
     relationsWithNatal: groupRelations([
       ...stemRelations([...natalStems, { pos, char: stem }], pos),
       ...branchRelations([...natalBranches, { pos, char: branch }], pos),
-    ]).map(describe),
+    ]).map(describeRelation),
   });
   const cl = currentLuck as { ganji: string; stem: HeavenlyStem; branch: EarthlyBranch } | null;
 
@@ -359,10 +359,10 @@ export function toLlmPayload(r: SajuResult, referenceDate: Ymd = todayKst()) {
     },
     tenGodCounts: { basis: '천간 + 지지 정기 기준, 일간 제외', counts: tenGodCounts },
     strength,
-    relations: groupRelations([...stemRelations(natalStems), ...branchRelations(natalBranches)]).map(describe),
-    specialStars: specialStars(dm, natalFull).map((s) => ({
+    relations: groupRelations([...stemRelations(natalStems), ...branchRelations(natalBranches)]).map(describeRelation),
+    specialStars: specialStars(dm, natalFull).map(({ positions, ...s }) => ({
       ...s,
-      where: s.positions.map((p) => POSITION_LABEL[p]),
+      where: positions.map((p) => POSITION_LABEL[p]),
     })),
     voidBranches: {
       byDayPillar: d.voidBranches,
@@ -381,10 +381,10 @@ export function toLlmPayload(r: SajuResult, referenceDate: Ymd = todayKst()) {
 
 export type SajuPayload = ReturnType<typeof toLlmPayload>;
 
-type Rel = ReturnType<typeof branchRelations>[number];
+export type Rel = ReturnType<typeof branchRelations>[number];
 
 /** 같은 종류·같은 글자 조합이 여러 자리에서 반복되면 하나로 묶는다 (예: 丑 1개 + 午 3개 → 축오 해 1건) */
-function groupRelations(rels: Rel[]): Rel[] {
+export function groupRelations(rels: Rel[]): Rel[] {
   const out: Rel[] = [];
   for (const r of rels) {
     const sig = `${r.type}|${[...new Set(r.chars)].sort().join('')}`;
@@ -405,10 +405,11 @@ function groupRelations(rels: Rel[]): Rel[] {
   return out;
 }
 
-function describe(rel: Rel) {
+export function describeRelation(rel: Rel) {
   return {
     type: rel.type,
-    chars: rel.chars.join(''),
+    /** 관련 글자 종류 (반복은 note 에 개수로) */
+    chars: [...new Set(rel.chars)].join(''),
     where: rel.positions.map((p) => POSITION_LABEL[p]),
     ...(rel.result ? { result: rel.result } : {}),
     ...(rel.adjacent !== undefined ? { adjacent: rel.adjacent } : {}),

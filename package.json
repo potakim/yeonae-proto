@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "criteria:doc": "UPDATE_DOCS=1 vitest run src/lib/__tests__/fortune.test.ts -t 해석"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",

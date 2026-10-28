@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import InterpretPanel from '../components/InterpretPanel';
+import FortunePanel from '../components/FortunePanel';
 import type { DayBoundary, FiveElement, Gender } from 'manseryeok';
 import {
   BIRTH_PLACES,
@@ -390,7 +390,7 @@ function SajuResultView({ r }: { r: SajuResult }) {
         </section>
       )}
 
-      <InterpretPanel key={JSON.stringify(payload.input)} payload={payload} />
+      <FortunePanel key={JSON.stringify(r.input)} input={r.input} />
 
       <details className="card dev">
         <summary>개발용 · LLM 해석 단계에 넘길 데이터</summary>

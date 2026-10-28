@@ -18,7 +18,7 @@ import {
 
 /* ───────────────────────── 기본 표 ───────────────────────── */
 
-export type Position = 'year' | 'month' | 'day' | 'hour' | 'luck' | 'annual' | 'monthly';
+export type Position = 'year' | 'month' | 'day' | 'hour' | 'luck' | 'annual' | 'monthly' | 'daily';
 export const POSITION_LABEL: Record<Position, string> = {
   year: '연주',
   month: '월주',
@@ -27,6 +27,7 @@ export const POSITION_LABEL: Record<Position, string> = {
   luck: '대운',
   annual: '세운',
   monthly: '월운',
+  daily: '일진',
 };
 const NATAL: Position[] = ['year', 'month', 'day', 'hour'];
 
@@ -362,3 +363,20 @@ export function judgeStrength(
 }
 
 export { NATAL, SEASON, GENERATES };
+
+/** 원국 기준 연애 관련 신살 글자 (흐름에서 다시 들어오는지 볼 때 사용) */
+export function loveStarBranches(
+  dayStem: HeavenlyStem,
+  yearBranch: EarthlyBranch,
+  dayBranch: EarthlyBranch,
+): { name: '도화' | '홍염살' | '역마'; char: EarthlyBranch; basis: string }[] {
+  const out: { name: '도화' | '홍염살' | '역마'; char: EarthlyBranch; basis: string }[] = [];
+  for (const [label, b] of [['일지', dayBranch], ['연지', yearBranch]] as const) {
+    const g = GROUP_STARS[groupOf(b)];
+    for (const name of ['도화', '역마'] as const) {
+      if (!out.some((o) => o.name === name && o.char === g[name])) out.push({ name, char: g[name], basis: `${label}(${b}) 삼합 기준` });
+    }
+  }
+  out.push({ name: '홍염살', char: HONGYEOM[dayStem], basis: `일간(${dayStem}) 기준` });
+  return out;
+}
