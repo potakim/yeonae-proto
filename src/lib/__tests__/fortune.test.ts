@@ -80,7 +80,9 @@ describe('일진 신호 — 갑오 일주 남성, 을해일', () => {
     expect(wu.activatedStars).toContain('홍염살');
     expect(wu.elementExcess).toContain('화');
     const zi = days.find((d) => d.branch.char === '자')!;
-    expect(zi.reasons.map((r) => r.code)).toContain('relation.충.day');
+    const chung = zi.reasons.find((r) => r.code === 'relation.충+day')!;
+    expect(chung.delta).toBe(-2);
+    expect(chung.text).toContain('일지');
   });
 });
 

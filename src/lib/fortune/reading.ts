@@ -19,7 +19,7 @@ import {
 } from './signals.js';
 
 /** 프롬프트·스키마를 바꾸면 올린다 (캐시 키에 포함) */
-export const PROMPT_VERSION = 'fortune-2026-10-28.1';
+export const PROMPT_VERSION = 'fortune-2026-10-28.2';
 
 export type ReadingKind = 'natal' | 'today' | 'week' | 'year' | 'todayShared';
 export const READING_KINDS: ReadingKind[] = ['natal', 'today', 'week', 'year', 'todayShared'];
@@ -165,6 +165,7 @@ export function buildSystemPrompt(characterName: string): string {
 
 ## 형식
 - 지정된 JSON 스키마로만 답해. 각 문자열은 마크다운 없이 평문.
+- 각 항목의 글자 수 안내를 지켜. 근거를 전부 나열하지 말고 가장 중요한 것만 골라.
 - 사주 용어는 처음 나올 때 괄호로 쉽게 풀어 줘. 예: 상관(말·표현의 기운)
 - 연애 관점을 우선해. 일·돈 이야기는 연애와 이어질 때만 짧게.`;
 }
@@ -215,17 +216,17 @@ const str = (description: string) => ({ type: 'string', description });
 export function outputSchema(bundle: Bundle) {
   const items = bundle.lucky?.items ?? Object.values(ELEMENT_INFO).flatMap((e) => e.items);
   const common = {
-    headline: str('한 줄 제목 (20자 안팎)'),
-    summary: str('총평 2~3문장'),
-    love: str('연애운 3~4문장, 근거 자연스럽게 포함'),
-    caution: str('조심할 점 1~2문장, 대처법으로 끝내기'),
+    headline: str('한 줄 제목 (20자 이내)'),
+    summary: str('총평 2문장 (100자 이내)'),
+    love: str('연애운 3문장 (180자 이내), 근거 1~2개만 자연스럽게'),
+    caution: str('조심할 점 2문장 (100자 이내), 대처법으로 끝내기'),
     lucky: {
       type: 'object',
       properties: { item: { type: 'string', enum: items, description: '행운 아이템 (목록 중 하나)' }, action: str('오늘/이번 기간에 해 볼 작은 행동 한 문장') },
       required: ['item', 'action'],
       additionalProperties: false,
     },
-    closing: str('캐릭터 말투의 따뜻한 마무리 한두 문장'),
+    closing: str('캐릭터 말투의 따뜻한 마무리 한 문장 (50자 이내)'),
   };
   const commonKeys = ['headline', 'summary', 'love', 'caution', 'lucky', 'closing'];
   switch (bundle.kind) {
@@ -234,9 +235,9 @@ export function outputSchema(bundle: Bundle) {
         type: 'object',
         properties: {
           headline: common.headline,
-          personality: str('일간·오행으로 본 타고난 성향 3문장'),
-          loveStyle: str('연애 스타일 3~4문장 (일지·이성의 별·관계 근거)'),
-          goodMatch: str('잘 맞는 상대의 기운 2~3문장 (부족한 오행·십신 근거)'),
+          personality: str('일간·오행으로 본 타고난 성향 3문장 (180자 이내)'),
+          loveStyle: str('연애 스타일 4문장 (250자 이내, 일지·이성의 별·관계 중 핵심 2~3개만)'),
+          goodMatch: str('잘 맞는 상대의 기운 3문장 (150자 이내, 부족한 오행·십신 근거)'),
           caution: common.caution,
           lucky: common.lucky,
           closing: common.closing,

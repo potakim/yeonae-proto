@@ -140,7 +140,7 @@ export default function FortunePanel({ input }: { input: SajuInput }) {
       </details>
 
       <button className="btn-primary" disabled={loading !== null} onClick={() => request(kind)}>
-        {loading === kind ? '무당이 풀이를 쓰는 중… (20~40초)' : `${KIND_LABEL[kind]} 풀이 받기`}
+        {loading === kind ? '무당이 풀이를 쓰는 중… (20~40초)' : kind === 'natal' ? '원국 풀이 받기' : `${KIND_LABEL[kind]} 풀이 받기`}
       </button>
       {error && <p className="error">풀이를 받지 못했어요: {error}</p>}
 
@@ -164,6 +164,11 @@ export default function FortunePanel({ input }: { input: SajuInput }) {
 
 /* ───────────── 신호 표시 ───────────── */
 
+const STAGE_HANJA: Record<string, string> = {
+  장생: '長生', 목욕: '沐浴', 관대: '冠帶', 건록: '建祿', 제왕: '帝旺', 쇠: '衰',
+  병: '病', 사: '死', 묘: '墓', 절: '絶', 태: '胎', 양: '養',
+};
+
 const toneClass = (tone: string) => (tone === '좋음' ? 'tone-good' : tone === '주의' ? 'tone-care' : 'tone-mid');
 
 function Grade({ s }: { s: Pick<FlowSignal, 'grade' | 'tone'> }) {
@@ -182,7 +187,7 @@ function DaySignal({ s, title }: { s: FlowSignal; title: string }) {
       <div className="chips">
         <span className="tag">천간 {s.stem.char} {s.stem.tenGod}</span>
         <span className="tag">지지 {s.branch.char} {s.branch.tenGod}</span>
-        <span className="tag">12운성 {s.twelveStage}</span>
+        <span className="tag">12운성 {s.twelveStage}({STAGE_HANJA[s.twelveStage]})</span>
         {s.loveStar && <span className="tag tag-love">이성의 별</span>}
         {s.isVoid && <span className="tag">공망</span>}
         {s.activatedStars.map((x) => (

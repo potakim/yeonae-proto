@@ -169,20 +169,24 @@ export function flowSignal(ctx: NatalContext, scope: FlowSignal['scope'], stem: 
     ...stemRelations([...ctx.stems, { pos, char: stem }], pos),
     ...branchRelations([...ctx.branches, { pos, char: branch }], pos),
   ]);
-  const seen = new Set<string>();
+  // 종류당 한 줄: 기본 점수 + (일간·일지와 직접이면) 추가 점수를 합쳐 하나의 근거로
+  const byType = new Map<string, { chars: Set<string>; day: boolean }>();
   for (const rel of raw) {
-    const c = RELATION_CRITERIA[rel.type];
-    if (!c) continue;
-    const touchesDay = rel.positions.includes('day');
-    if (!seen.has(rel.type)) {
-      seen.add(rel.type);
-      add(`relation.${rel.type}`, c.score, `${rel.type}(${[...new Set(rel.chars)].join('')}): ${c.love}`);
-    }
-    if (touchesDay && c.dayBonus !== 0 && !seen.has(`${rel.type}@day`)) {
-      seen.add(`${rel.type}@day`);
-      const where = rel.type.startsWith('천간') ? '일간' : '일지(배우자 자리)';
-      add(`relation.${rel.type}.day`, c.dayBonus, `${where}와 직접 ${rel.type}`);
-    }
+    if (!RELATION_CRITERIA[rel.type]) continue;
+    const e = byType.get(rel.type) ?? { chars: new Set<string>(), day: false };
+    rel.chars.forEach((c) => e.chars.add(c));
+    e.day ||= rel.positions.includes('day');
+    byType.set(rel.type, e);
+  }
+  for (const [type, e] of byType) {
+    const c = RELATION_CRITERIA[type];
+    const dayHit = e.day && c.dayBonus !== 0;
+    const where = type.startsWith('천간') ? '일간' : '일지(배우자 자리)';
+    add(
+      `relation.${type}${dayHit ? '+day' : ''}`,
+      c.score + (dayHit ? c.dayBonus : 0),
+      `${type}(${[...e.chars].join('')}): ${c.love}${dayHit ? ` — ${where}와 직접 걸려 더 크게 작용` : ''}`,
+    );
   }
   const relations = raw.map(describeRelation);
 
