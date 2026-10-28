@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { HubCharacter, Screen } from '../App';
 import { postApi } from '../lib/ai/client';
-import { CARD_INFO, type Card } from '../lib/ai/chat';
+import { CARD_INFO, EMPTY_MEMO, greetingOf, type Card, type ChatMemo } from '../lib/ai/chat';
 
 interface Msg {
   role: 'user' | 'assistant';
@@ -21,7 +21,9 @@ export default function ChatPage({
   go: (s: Screen) => void;
   profile: { type: string | null; dayPillar: string | null };
 }) {
-  const greet = `안녕, 나 아는 ${hub}야. 요즘 연애 쪽으로 마음 쓰이는 거 있어요? 썸이든 이별이든 편하게 털어놔요.`;
+  const greet = greetingOf(hub);
+  // 서버가 돌려준 대화 메모(사용자가 말한 사실). 다음 요청에 그대로 돌려보내 맥락을 유지한다
+  const [memo, setMemo] = useState<ChatMemo>(EMPTY_MEMO);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,11 +43,15 @@ export default function ChatPage({
     setLoading(true);
     setError(null);
     try {
-      const r = await postApi<{ reply: string; card: Card; safety: { category: string } | null }>('/api/chat', {
+      const shownCards = msgs.flatMap((m) => (m.card && m.card !== 'none' ? [m.card] : []));
+      const r = await postApi<{ reply: string; card: Card; memo: ChatMemo; safety: { category: string } | null }>('/api/chat', {
         hub,
         profile,
+        memo,
+        shownCards,
         messages: next.map(({ role, content }) => ({ role, content })),
       });
+      if (r.memo) setMemo(r.memo);
       setMsgs([...next, { role: 'assistant', content: r.reply, card: r.card, safety: !!r.safety }]);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

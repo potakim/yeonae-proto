@@ -5,7 +5,7 @@
  *  1) 입력 규칙 검사(정규식)로 먼저 걸러 고정 응답 → LLM 호출 안 함
  *  2) LLM 이 스스로 분류한 category 가 위험이면 답을 고정 응답으로 교체
  */
-export const CHAT_PROMPT_VERSION = 'chat-2026-10-28.1';
+export const CHAT_PROMPT_VERSION = 'chat-2026-10-28.2';
 export type Hub = '형' | '언니';
 
 export const CARDS = ['none', 'kakao', 'compat', 'fortune', 'personality'] as const;
@@ -43,21 +43,83 @@ export const SAFE_REPLY: Record<Exclude<Category, 'normal'>, string> = {
     '그 얘기는 여기서 자세히 다루기 어려워요. 연애 고민이나 관계 이야기라면 언제든 같이 고민할게요. 지금 제일 마음 쓰이는 게 뭐예요?',
 };
 
-export function chatSystem(hub: Hub, profile: { type?: string | null; dayPillar?: string | null }): string {
+/* ───────────── 대화 메모 (일관성 유지) ─────────────
+ * 모델이 매 턴 "사용자가 직접 말한 사실"만 메모로 갱신하고, 브라우저가 다음 요청에 돌려보낸다.
+ * 대화가 길어져 앞부분이 잘려도 메모가 남아 맥락이 끊기지 않는다. 서버는 길이·형식만 검사한다.
+ */
+export const SITUATIONS = ['모름', '솔로', '썸', '연애중', '이별', '재회 고민', '기타'] as const;
+export interface ChatMemo {
+  situation: (typeof SITUATIONS)[number];
+  concern: string;
+  partner: string;
+  facts: string[];
+}
+export const EMPTY_MEMO: ChatMemo = { situation: '모름', concern: '', partner: '', facts: [] };
+
+const clip = (v: unknown, n: number) => (typeof v === 'string' ? v.replace(/[<>]/g, '').trim().slice(0, n) : '');
+export function sanitizeMemo(v: unknown): ChatMemo {
+  if (!v || typeof v !== 'object') return { ...EMPTY_MEMO };
+  const o = v as Record<string, unknown>;
+  return {
+    situation: SITUATIONS.includes(o.situation as ChatMemo['situation']) ? (o.situation as ChatMemo['situation']) : '모름',
+    concern: clip(o.concern, 120),
+    partner: clip(o.partner, 120),
+    facts: Array.isArray(o.facts) ? o.facts.map((f) => clip(f, 80)).filter(Boolean).slice(-8) : [],
+  };
+}
+
+export const greetingOf = (hub: Hub) =>
+  `안녕, 나 아는 ${hub}야. 요즘 연애 쪽으로 마음 쓰이는 거 있어요? 썸이든 이별이든 편하게 털어놔요.`;
+
+/** 카드 소개는 코드가 최종 결정: 사용자 발화 2번 이상 + 이미 보여 준 카드는 다시 안 띄움 */
+export function gateCard(card: Card, userTurns: number, shown: Card[]): Card {
+  if (card === 'none') return 'none';
+  if (userTurns < 2) return 'none';
+  if (shown.includes(card)) return 'none';
+  return card;
+}
+
+/** 코드가 카드를 막았는데 답 끝에 소개 문장이 남았으면 그 문장을 뺀다 */
+export function stripCardMention(reply: string): string {
+  const parts = reply.split(/(?<=[.!?。…~])\s+/);
+  if (parts.length < 2) return reply;
+  const last = parts[parts.length - 1];
+  return /소개|여사친|무당|테스트 해|분석해 볼|궁합|연애운/.test(last) ? parts.slice(0, -1).join(' ') : reply;
+}
+
+export function chatSystem(hub: Hub, profile: { type?: string | null; dayPillar?: string | null }, memo: ChatMemo, shown: Card[], userTurns = 2): string {
   const p = [profile.type ? `성격유형 ${profile.type}` : null, profile.dayPillar ? `${profile.dayPillar} 일주` : null].filter(Boolean).join(', ');
   return `너는 연애 상담 앱 '모두의 연애'의 허브 캐릭터 "아는 ${hub}"야. 연애 고민을 편하게 털어놓는 상대. 솔직하고 직설적이지만 따뜻해.
-말투: 친근한 해요체("~해요", "~거든요")가 기본, 가끔 짧은 반말 감탄("에이~", "야 그건 좀")만 섞어. 비속어·과한 유행어 금지.
-${p ? `사용자 정보(참고만, 매번 언급하지 마): ${p}` : ''}
+말투: 친근한 해요체("~해요", "~거든요")가 기본, 가끔 짧은 반말 감탄("에이~", "야 그건 좀")만 섞어. 비속어·과한 유행어 금지. 처음부터 끝까지 같은 말투를 유지해.
 
-## 대화 방식
-- 한 번에 2~4문장. 먼저 공감하고, 상황을 파악하는 질문은 한 번에 하나만.
-- 처음 3~5턴은 상황(썸/연애중/이별/솔로, 무엇이 고민인지)을 파악해.
-- 상황이 충분히 보이면 card 로 전문 캐릭터를 소개해. 맞는 게 없으면 none.
+대화는 네가 먼저 이렇게 인사하며 시작됐어: "${greetingOf(hub)}"
+
+<memo>
+지금까지 사용자가 직접 말한 내용 (이게 대화의 기준이야)
+${JSON.stringify(memo)}
+</memo>
+${userTurns < 2 ? '이번 답에서는 card 를 반드시 none 으로 해. 아직 상황을 듣는 단계야.\n' : ''}${shown.length ? `이미 소개한 카드: ${shown.join(', ')} (다시 소개하지 마)\n` : ''}${p ? `사용자 프로필(사용자가 사주·성향을 먼저 물을 때만 꺼내. 먼저 언급하지 마): ${p}\n` : ''}
+## 일관성 규칙 (가장 중요)
+- 답은 사용자의 마지막 말에 대한 반응이어야 해. 먼저 focus 에 그 요지를 한 줄로 적고, reply 는 그 요지에서 벗어나지 마.
+- memo 와 대화에 없는 사실(상대 이름·나이·직업·성별·사건·기간)을 지어내거나 넘겨짚지 마. 모르면 물어봐.
+- 이미 사용자가 답한 걸 다시 묻지 마. 앞에서 한 말·조언과 모순되는 말을 하지 마.
+- 사용자가 화제를 바꾸면 따라가되, 앞의 고민과 연결되면 자연스럽게 이어 줘.
+- 새로운 화제(사주·운세·MBTI·다른 고민)를 네가 먼저 꺼내지 마. 사용자가 꺼냈을 때만 다뤄.
+- 연애와 상관없는 질문(코딩·숙제·뉴스 등)엔 한 문장으로 가볍게 받아 주고, 연애 이야기로 부드럽게 돌아와.
+- 질문은 한 번에 하나. 2~4문장, 250자 이내.
+
+## memo 갱신
+- 이번 사용자 말까지 반영해 memo 를 다시 써. 사용자가 직접 말한 것만 적고 네 추측·조언은 적지 마.
+- situation: 솔로/썸/연애중/이별/재회 고민/기타, 아직 모르면 모름. concern: 핵심 고민 한 줄. partner: 상대에 대해 들은 사실. facts: 그 밖에 사용자가 말한 중요한 사실(최대 8개, 오래된 것부터 빠짐).
+- 사용자가 정정하면 memo 도 정정해.
+
+## 소개 카드
+- 상황과 고민이 어느 정도 보이면 card 로 전문 캐릭터를 소개해. 맞는 게 없으면 none.
   · kakao: 카톡·연락 패턴, 상대 마음이 궁금할 때 → 여사친
-  · compat: 그 사람과 잘 맞는지, 궁합이 궁금할 때 → 무당
-  · fortune: 언제 인연이 오는지, 연애운·시기가 궁금할 때 → 무당
+  · compat: 그 사람과 잘 맞는지 궁금할 때 → 무당
+  · fortune: 인연이 언제 오는지, 연애운·시기가 궁금할 때 → 무당
   · personality: 내 연애 스타일·반복되는 패턴이 궁금할 때 → 성격 테스트
-- 같은 카드를 연달아 권하지 마. 소개할 땐 reply 에 자연스럽게 한 문장으로 연결해.
+- 카드를 고르면 reply 마지막 한 문장으로 자연스럽게 연결해. 카드가 none 이면 카드 얘기를 하지 마.
 
 ## 안전
 - category 를 정직하게 분류해: 자살·자해 암시 crisis, 폭력·협박·스토킹 피해 violence_victim, 상대 감시·몰래 확인·조종 요청 harmful_request, 성적인 요청 sexual, 그 외 normal.
@@ -70,10 +132,22 @@ export const chatSchema = {
   type: 'object',
   properties: {
     category: { type: 'string', enum: [...CATEGORIES] },
-    reply: { type: 'string', description: '사용자에게 보낼 답 (2~4문장, 250자 이내)' },
+    focus: { type: 'string', description: '사용자 마지막 말의 요지 한 줄 (사용자에게 안 보임)' },
+    memo: {
+      type: 'object',
+      properties: {
+        situation: { type: 'string', enum: [...SITUATIONS] },
+        concern: { type: 'string' },
+        partner: { type: 'string' },
+        facts: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['situation', 'concern', 'partner', 'facts'],
+      additionalProperties: false,
+    },
+    reply: { type: 'string', description: '사용자에게 보낼 답 (2~4문장, 250자 이내), focus 에서 벗어나지 않게' },
     card: { type: 'string', enum: [...CARDS], description: '지금 소개할 전문 캐릭터, 없으면 none' },
   },
-  required: ['category', 'reply', 'card'],
+  required: ['category', 'focus', 'memo', 'reply', 'card'],
   additionalProperties: false,
 };
 

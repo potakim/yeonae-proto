@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { calculateSaju, type SajuInput } from '../saju';
 import { computeCompat, compatCriteriaMarkdown } from '../compat/compat';
 import { computeChatStats, interestScore, maskText, type ChatMessage } from '../kakao/stats';
-import { precheck } from '../ai/chat';
+import { gateCard, precheck, sanitizeMemo, stripCardMention } from '../ai/chat';
 import { getQuestions } from '../personality/questions';
 import type { CallModel } from '../../../server/llm';
 import { handleCompat } from '../../../api/compat';
@@ -228,3 +228,55 @@ describe('API 핸들러 (Claude 대역)', () => {
     expect(bad.status).toBe(400);
   });
 });
+
+describe('허브 채팅 일관성', () => {
+  it('메모: 형식·길이 정리, 엉뚱한 상황값은 모름', () => {
+    const m = sanitizeMemo({ situation: '우주', concern: '<b>답장</b>이 느려요', partner: 'x'.repeat(300), facts: ['a', '', 'b', 1] });
+    expect(m.situation).toBe('모름');
+    expect(m.concern).toBe('b답장/b이 느려요');
+    expect(m.partner.length).toBe(120);
+    expect(m.facts).toEqual(['a', 'b']);
+  });
+
+  it('카드: 첫 발화엔 안 띄우고, 이미 보여 준 카드는 다시 안 띄움', () => {
+    expect(gateCard('kakao', 1, [])).toBe('none');
+    expect(gateCard('kakao', 2, [])).toBe('kakao');
+    expect(gateCard('kakao', 3, ['kakao'])).toBe('none');
+    expect(gateCard('compat', 3, ['kakao'])).toBe('compat');
+  });
+
+  it('카드를 막으면 답 끝의 소개 문장도 뺀다', () => {
+    expect(stripCardMention('그랬구나. 답장이 느리면 답답하죠. 여사친한테 카톡 한번 보여 줄래요?')).toBe('그랬구나. 답장이 느리면 답답하죠.');
+    expect(stripCardMention('그랬구나. 얼마나 됐어요?')).toBe('그랬구나. 얼마나 됐어요?');
+  });
+
+  it('메모·이미 본 카드가 시스템 프롬프트에 들어가고, 갱신된 메모가 돌아온다', async () => {
+    const c = makeCaller([
+      { category: 'normal', focus: '답장이 반나절 걸림', memo: { situation: '썸', concern: '썸남 답장이 느림', partner: '소개팅 상대', facts: ['2주째 연락'] }, reply: '반나절이면 서운하죠. 여사친한테 카톡 보여 줄래요?', card: 'kakao' },
+    ]);
+    const res = await handleChat(
+      req({
+        hub: '형',
+        memo: { situation: '썸', concern: '썸남 답장이 느림', partner: '소개팅 상대', facts: [] },
+        shownCards: ['kakao'],
+        messages: [{ role: 'user', content: '썸남 답장이 느려요' }, { role: 'assistant', content: '얼마나?' }, { role: 'user', content: '반나절이요' }],
+      }),
+      { env: {}, callModel: c.fn },
+    );
+    const j = await res.json();
+    expect(c.calls[0].system).toContain('썸남 답장이 느림');
+    expect(c.calls[0].system).toContain('이미 소개한 카드: kakao');
+    expect(j.card).toBe('none');
+    expect(j.reply).toBe('반나절이면 서운하죠.');
+    expect(j.memo.facts).toEqual(['2주째 연락']);
+    expect(j.meta.cardGated).toBe('kakao');
+  });
+
+  it('첫 발화에서는 프롬프트로 카드 금지를 알린다', async () => {
+    const c = makeCaller([{ category: 'normal', focus: '인사', memo: { situation: '모름', concern: '', partner: '', facts: [] }, reply: '반가워요. 무슨 일 있어요?', card: 'none' }]);
+    await handleChat(req({ hub: '언니', messages: [{ role: 'user', content: '안녕하세요' }] }), { env: {}, callModel: c.fn });
+    expect(c.calls[0].system).toContain('card 를 반드시 none');
+    expect(c.calls[0].system).toContain('안녕, 나 아는 언니야');
+  });
+});
+
