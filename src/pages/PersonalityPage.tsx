@@ -1,4 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AI_NOTICE, postApi } from '../lib/ai/client';
+import { SITUATIONS, type Situation } from '../lib/ai/personality';
 import type { HubCharacter } from '../App';
 import { AXIS_LABEL, LIKERT, POLE_LABEL, getQuestions, type TestMode } from '../lib/personality/questions';
 import { scorePersonality, toPersonalityPayload, type Answers, type PersonalityResult } from '../lib/personality/scoring';
@@ -6,7 +8,7 @@ import { BORDER_TIPS, TYPE_PROFILES } from '../lib/personality/types';
 
 type Stage = 'intro' | 'quiz' | 'result';
 
-export default function PersonalityPage({ hub }: { hub: HubCharacter }) {
+export default function PersonalityPage({ hub, onType }: { hub: HubCharacter; onType?: (type: string) => void }) {
   const [stage, setStage] = useState<Stage>('intro');
   const [mode, setMode] = useState<TestMode>('full');
   const [answers, setAnswers] = useState<Answers>({});
@@ -101,22 +103,55 @@ export default function PersonalityPage({ hub }: { hub: HubCharacter }) {
   }
 
   return result ? (
-    <ResultView result={result} hub={hub} mode={mode} onRetry={() => setStage('intro')} />
+    <ResultView result={result} hub={hub} mode={mode} answers={answers} onType={onType} onRetry={() => setStage('intro')} />
   ) : null;
+}
+
+interface AiReading {
+  headline: string;
+  summary: string;
+  loveStyle: string;
+  strengths: string[];
+  watchOut: string[];
+  situationTip: string;
+  hubComment: string;
 }
 
 function ResultView({
   result,
   hub,
   mode,
+  answers,
+  onType,
   onRetry,
 }: {
   result: PersonalityResult;
   hub: HubCharacter;
   mode: TestMode;
+  answers: Answers;
+  onType?: (type: string) => void;
   onRetry: () => void;
 }) {
   const profile = TYPE_PROFILES[result.type];
+  const [situation, setSituation] = useState<Situation | null>(null);
+  const [ai, setAi] = useState<{ reading: AiReading; meta: { model: string; cached: boolean } } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    onType?.(result.type);
+  }, [onType, result.type]);
+
+  const askAi = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setAi(await postApi('/api/personality', { mode, answers, hub, situation }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
   const borderAxes = result.axes.filter((a) => a.clarity === '경계');
   const payload = toPersonalityPayload(result, mode);
 
@@ -195,10 +230,46 @@ function ResultView({
 
       <section className="card bubble">
         <div className="bubble-who">{hub === '형' ? '🧢 아는 형' : '🎀 아는 언니'}</div>
-        <p>
-          {hub === '형' ? profile.hubComment : profile.hubComment.replace(/형/g, '언니')}
-        </p>
-        <p className="hint">※ 프로토타입에서는 고정 문구예요. 실서비스에서는 이 데이터를 바탕으로 AI가 대화해요.</p>
+        {ai ? (
+          <div className="ai-reading">
+            <h4 className="reading-headline">{ai.reading.headline}</h4>
+            <p>{ai.reading.summary}</p>
+            <div className="reading-label">연애할 때 나는</div>
+            <p>{ai.reading.loveStyle}</p>
+            <div className="two-col">
+              <div>
+                <h4>💪 연애 강점</h4>
+                <ul>{ai.reading.strengths.map((x) => <li key={x}>{x}</li>)}</ul>
+              </div>
+              <div>
+                <h4>🚧 조심할 점</h4>
+                <ul>{ai.reading.watchOut.map((x) => <li key={x}>{x}</li>)}</ul>
+              </div>
+            </div>
+            <div className="reading-label">{situation ? `${situation}인 지금` : '지금 해 볼 것'}</div>
+            <p>{ai.reading.situationTip}</p>
+            <p className="closing">“{ai.reading.hubComment}”</p>
+            <p className="ai-label">
+              {AI_NOTICE} · {ai.meta.model} · {ai.meta.cached ? '캐시' : '새로 생성'}
+            </p>
+          </div>
+        ) : (
+          <p>{hub === '형' ? profile.hubComment : profile.hubComment.replace(/형/g, '언니')}</p>
+        )}
+        <div className="field">
+          <label>지금 내 상황 (선택하면 맞춤 조언)</label>
+          <div className="segmented">
+            {SITUATIONS.map((x) => (
+              <button key={x} className={situation === x ? 'active' : ''} onClick={() => setSituation(situation === x ? null : x)}>
+                {x}
+              </button>
+            ))}
+          </div>
+        </div>
+        <button className="btn-primary" disabled={loading} onClick={askAi}>
+          {loading ? `아는 ${hub}가 생각하는 중…` : ai ? '다시 풀이 받기' : `아는 ${hub}에게 자세히 듣기 (AI)`}
+        </button>
+        {error && <p className="error">{error}</p>}
       </section>
 
       <div className="stack-sm">

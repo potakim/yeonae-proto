@@ -4,6 +4,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/fortune.ts": { "maxDuration": 120 }
+    "api/fortune.ts": { "maxDuration": 120 },
+    "api/compat.ts": { "maxDuration": 120 },
+    "api/personality.ts": { "maxDuration": 90 },
+    "api/chat.ts": { "maxDuration": 60 },
+    "api/kakao.ts": { "maxDuration": 180 }
   }
 }

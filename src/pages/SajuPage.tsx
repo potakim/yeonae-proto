@@ -30,7 +30,7 @@ const DAY_BOUNDARY_OPTIONS: { value: DayBoundary; label: string; desc: string }[
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5);
 
-export default function SajuPage() {
+export default function SajuPage({ onSaved }: { onSaved?: (input: SajuInput) => void }) {
   const [year, setYear] = useState('1995');
   const [month, setMonth] = useState('3');
   const [day, setDay] = useState('15');
@@ -71,6 +71,7 @@ export default function SajuPage() {
     };
     try {
       setResult(calculateSaju(input));
+      onSaved?.(input);
       setTimeout(() => document.getElementById('saju-result')?.scrollIntoView({ behavior: 'smooth' }), 50);
     } catch (e) {
       setResult(null);

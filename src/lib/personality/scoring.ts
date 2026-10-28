@@ -1,4 +1,4 @@
-import { AXIS_POLES, type Axis, type Pole, type Question } from './questions';
+import { AXIS_POLES, type Axis, type Pole, type Question } from './questions.js';
 
 /** 문항 id → 응답(1~5) */
 export type Answers = Record<string, number>;

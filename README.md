@@ -38,6 +38,25 @@ npm run criteria:doc         # criteria.ts 를 바꾼 뒤 기준 문서 재생�
 - **미리보기(dryRun)**: 화면 "테스트 설정"에서 켜면 Claude 호출 없이 프롬프트·스키마·캐시 키만 받아요. 키 없이도 확인 가능.
 - 모델 기본 `claude-sonnet-5-5` (`ANTHROPIC_MODEL`), 공개 URL엔 `INTERPRET_ACCESS_CODE` 필수 권장.
 
+### AI 기능 전체 (Claude API)
+
+| 화면 | API | 코드가 확정하는 것 | LLM 이 하는 것 | 모델 |
+|---|---|---|---|---|
+| 아는 형/언니 대화 | `POST /api/chat` | 위기·피해·감시 요청 감지 → 고정 안전 응답 | 공감·상황 파악, 소개 카드(카톡/궁합/연애운/성향) 선택 | 경량 `claude-haiku-5-5` |
+| 카톡 분석 (여사친) | `POST /api/kakao` | 마스킹(이름·번호·계좌), 선톡·답장 시간·질문·애정 표현 통계, 호감도 점수 | ①스크린샷 → 말풍선 추출(Vision) ②리포트·관계 단계·답장 추천 | `claude-sonnet-5-5` |
+| 사주×MBTI 궁합 (무당) | `POST /api/compat` | 두 원국, 일간·일지·띠·오행·도화·MBTI 근거와 점수(15~98) | 궁합 풀이 | `claude-sonnet-5-5` |
+| 연애운 (무당) | `POST /api/fortune` | 일진·주간·세운·월운 신호와 등급 | 운세 문장 | `claude-sonnet-5-5` |
+| 연애 성향 테스트 | `POST /api/personality` | 서버에서 재채점 | 아는 형/언니 해석 + 상황별 조언 | `claude-sonnet-5-5` |
+
+- 모든 출력은 JSON 스키마(structured outputs)로 받아 카드에 꽂아요. 결과 아래 생성형 AI 고지, 대화 말풍선마다 'AI' 표시.
+- 개인정보: 생년월일·대화·스크린샷은 저장하지 않아요. 카톡은 원문을 응답에도 돌려주지 않고, LLM 에는 가린 발췌 30개만.
+- 캐시(인스턴스 메모리): 연애운·궁합·성향 해석. 카톡·대화는 캐시하지 않음.
+- 요청 제한(IP·분): 대화 20, 운세·궁합·성향 10, 카톡 4.
+- 기준 문서: `docs/interpretation-criteria.md`(운세), `docs/compat-criteria.md`(궁합) — `npm run criteria:doc` 로 재생성.
+- 환경 변수: `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`(리포트), `ANTHROPIC_MODEL_LIGHT`(대화), `INTERPRET_ACCESS_CODE`.
+
+**아직 없는 것 (실서비스 전)**: 크레딧 차감·무료 한도, 사용자별 제한(지금은 IP 기준), 영구 캐시, 출력 필터 재검사, 신고 버튼·운영 대시보드, 토스 앨범 API 연동(지금은 파일 선택).
+
 ## Vercel 배포
 
 둘 중 편한 방법으로.
@@ -65,8 +84,11 @@ src/
       reading.ts               LLM 입력 묶음·프롬프트·출력 스키마·캐시 키 (서버·브라우저 공용)
   components/
     FortunePanel.tsx           오늘/이번 주/올해/원국 탭, 신호 카드, 풀이 카드, AI 고지
-api/
-  fortune.ts                   POST /api/fortune (Vercel 함수 + 로컬 개발 API), 캐시
+api/                           Vercel 함수 (로컬은 vite 미들웨어가 같은 파일 실행)
+  fortune.ts · compat.ts · personality.ts · kakao.ts · chat.ts
+server/
+  llm.ts                       Claude 호출(JSON·이미지)·접근 코드·요청 제한·캐시·오류 문구
+  birth.ts                     생년월일·MBTI 입력 검증
 docs/
   interpretation-criteria.md   해석 기준 문서 (자동 생성)
     personality/
