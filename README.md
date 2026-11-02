@@ -14,6 +14,15 @@ npm run build    # dist/ 생성
 
 Node 18 이상.
 
+### 화면 구성 (화면설계서 v0.2 반영)
+
+- **홈** = 캐릭터(서비스 프로필) 목록: 내 프로필 카드 → 즐겨찾기 → 연애 상담 / 카톡 분석 / 성향 테스트 / 사주·궁합 / (소개) → 추천 서비스. `src/pages/Home.tsx`, 캐릭터 데이터 `src/data/characters.ts`
+- **서비스 프로필**: 풀블리드 히어로 + 대화 시작 / 이어서 대화 / 저장된 분석. `src/pages/CharacterProfile.tsx` (일러스트가 오면 `.profile-hero` 배경 이미지로 교체)
+- **하단 탭** 홈 / 대화 / (소개) / 마이. `src/components/BottomTab.tsx`
+- **컬러**: 시안 A Pink Violet — 핑크 `--brand-pink` = CTA·관계, 바이올렛 `--brand-violet` = 사주·분석·유료·AI 배지. 기존 `--blue` 별칭은 핑크로 매핑돼 옛 화면도 같은 톤.
+- **소개 탭 플래그** `intro_tab`: 기본 OFF(3탭). 켜기 → `?intro=1`, 마이 탭 > 테스트 설정, 또는 `VITE_FLAG_INTRO_TAB=1`. OFF면 소개 섹션·캐릭터·탭이 어디에도 렌더되지 않는다.
+- 소은누나·성현이형은 프로토타입에서 허브 대화 엔진을 공유(이름만 다름). 세션 모델·사이드바·저장된 분석은 미구현.
+
 ### 운세·풀이 (계산 → 신호 → 문장)
 
 ```

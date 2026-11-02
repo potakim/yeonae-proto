@@ -1,112 +1,123 @@
-import type { HubCharacter, Screen } from '../App';
+import { useState } from 'react';
+import type { HubCharacter } from '../App';
+import { CHARACTERS, SECTIONS, type Character } from '../data/characters';
+import { isOn } from '../lib/flags';
+import CharacterRow from '../components/CharacterRow';
 
 interface Props {
   hub: HubCharacter;
   setHub: (h: HubCharacter) => void;
-  go: (s: Screen) => void;
+  favorites: { ids: string[]; toggle: (id: string) => void; has: (id: string) => boolean };
+  onOpen: (c: Character) => void;
 }
 
-export default function Home({ hub, setHub, go }: Props) {
+function Section({
+  icon,
+  title,
+  children,
+  defaultOpen = true,
+}: {
+  icon: string;
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="stack">
-      <section className="hero">
-        <div className="hero-avatar" aria-hidden>
-          {hub === '형' ? '🧢' : '🎀'}
-        </div>
-        <h1 className="hero-title">
-          연애가 궁금할 땐
-          <br />
-          아는 {hub}한테 물어봐
-        </h1>
-        <p className="hero-sub">사주랑 성격유형으로 너를 먼저 알아볼게.</p>
-        <div className="segmented" role="tablist" aria-label="허브 캐릭터 선택">
+    <section className="section">
+      <button className="section-head" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span className="section-icon" aria-hidden>
+          {icon}
+        </span>
+        <span className="section-title">{title}</span>
+        <span className={`section-chev${open ? ' open' : ''}`} aria-hidden>
+          ⌄
+        </span>
+      </button>
+      {open && <div className="section-body">{children}</div>}
+    </section>
+  );
+}
+
+export default function Home({ hub, setHub, favorites, onOpen }: Props) {
+  const introOn = isOn('intro_tab');
+  const visible = CHARACTERS.filter((c) => !c.flag || (c.flag === 'intro_tab' && introOn));
+  const favs = favorites.ids.map((id) => visible.find((c) => c.id === id)).filter(Boolean) as Character[];
+
+  return (
+    <div className="home">
+      <header className="home-head">
+        <span className="logo" aria-hidden>
+          ♥
+        </span>
+        <h1>모두의 연애</h1>
+        <button className="icon-btn" aria-label="검색">
+          🔍
+        </button>
+      </header>
+
+      {/* 내 프로필 카드 — 프로토타입: 허브 성별 선택을 겸한다 (실서비스는 토스 로그인 성별) */}
+      <div className="me-card">
+        <span className="me-avatar" aria-hidden>
+          👤
+        </span>
+        <span className="me-text">
+          <strong>user_name</strong>
+          <span>연애 고민이 있다면, 언제든지 💕</span>
+        </span>
+        <span className="segmented mini" role="tablist" aria-label="허브 캐릭터">
           {(['형', '언니'] as const).map((h) => (
-            <button
-              key={h}
-              role="tab"
-              aria-selected={hub === h}
-              className={hub === h ? 'active' : ''}
-              onClick={() => setHub(h)}
-            >
-              아는 {h}
+            <button key={h} role="tab" aria-selected={hub === h} className={hub === h ? 'active' : ''} onClick={() => setHub(h)}>
+              {h}
             </button>
           ))}
-        </div>
-      </section>
-
-      <button className="menu-card" onClick={() => go('chat')}>
-        <span className="menu-emoji" aria-hidden>
-          💬
         </span>
-        <span className="menu-text">
-          <strong>{`아는 ${hub}에게 털어놓기`}</strong>
-          <span>고민을 들어 주고 맞는 전문가를 소개해 줘요 · AI 대화</span>
-        </span>
-        <span className="menu-chev" aria-hidden>
-          ›
-        </span>
-      </button>
-
-      <button className="menu-card" onClick={() => go('kakao')}>
-        <span className="menu-emoji" aria-hidden>
-          📱
-        </span>
-        <span className="menu-text">
-          <strong>카톡 분석</strong>
-          <span>캡처만 올리면 호감도·관계 단계·답장 추천 · 여사친</span>
-        </span>
-        <span className="menu-chev" aria-hidden>
-          ›
-        </span>
-      </button>
-
-      <button className="menu-card" onClick={() => go('compat')}>
-        <span className="menu-emoji" aria-hidden>
-          💞
-        </span>
-        <span className="menu-text">
-          <strong>사주 × MBTI 궁합</strong>
-          <span>그 사람 생일로 두 사람 기운 맞춰 보기 · 무당</span>
-        </span>
-        <span className="menu-chev" aria-hidden>
-          ›
-        </span>
-      </button>
-
-      <button className="menu-card" onClick={() => go('saju')}>
-        <span className="menu-emoji" aria-hidden>
-          📜
-        </span>
-        <span className="menu-text">
-          <strong>사주 원국 · 연애운</strong>
-          <span>만세력 계산 + 오늘·이번 주·올해 연애운 · 무당</span>
-        </span>
-        <span className="menu-chev" aria-hidden>
-          ›
-        </span>
-      </button>
-
-      <button className="menu-card" onClick={() => go('personality')}>
-        <span className="menu-emoji" aria-hidden>
-          🧠
-        </span>
-        <span className="menu-text">
-          <strong>연애 성향 테스트</strong>
-          <span>32문항(빠른 16문항) + 아는 형/언니 AI 해석</span>
-        </span>
-        <span className="menu-chev" aria-hidden>
-          ›
-        </span>
-      </button>
-
-      <div className="notice">
-        <strong>가능성 검증용 프로토타입이에요.</strong>
-        <ul>
-          <li>사주·성격유형·궁합·카톡 통계는 코드로 계산하고, 풀이와 대화는 생성형 AI(Claude)가 작성해요.</li>
-          <li>AI 기능을 쓸 때만 입력값이 서버로 전송돼요. 생년월일·대화·스크린샷은 저장하지 않아요.</li>
-          <li>AI 결과는 재미와 참고용이에요. 성격유형 테스트는 자체 제작 문항이며 공식 MBTI® 검사가 아니에요.</li>
-        </ul>
       </div>
+
+      <Section icon="☆" title="즐겨찾기">
+        {favs.length === 0 ? (
+          <p className="empty">자주 쓰는 캐릭터를 ★로 고정해요</p>
+        ) : (
+          favs.map((c, i) => (
+            <CharacterRow key={c.id} c={c} hub={hub} onOpen={onOpen} showStar favorite onToggleFavorite={favorites.toggle} last={i === favs.length - 1} />
+          ))
+        )}
+      </Section>
+
+      {SECTIONS.filter((s) => !s.flag || introOn).map((s) => {
+        const list = visible.filter((c) => c.category === s.key);
+        return (
+          <Section key={s.key} icon={s.icon} title={s.title}>
+            {list.map((c, i) => (
+              <CharacterRow key={c.id} c={c} hub={hub} onOpen={onOpen} last={i === list.length - 1} />
+            ))}
+          </Section>
+        );
+      })}
+
+      <Section icon="✨" title="추천 서비스">
+        <div className="reco-scroll">
+          <button className="reco-card" onClick={() => onOpen(CHARACTERS[1])}>
+            <span className="reco-label">지금 나에게 필요한 상담</span>
+            <strong>연락이 뜸해졌다면</strong>
+            <span>소은누나에게 물어봐요</span>
+          </button>
+          <button className="reco-card violet" onClick={() => onOpen(CHARACTERS[5])}>
+            <span className="reco-label">새로 열린 서비스</span>
+            <strong>오늘의 연애운</strong>
+            <span>사주마스터 · 무료</span>
+          </button>
+          <button className="reco-card" onClick={() => onOpen(CHARACTERS[4])}>
+            <span className="reco-label">상담 데이터 기반 추천</span>
+            <strong>내 연애 성향부터</strong>
+            <span>선생님 · 문항 무료</span>
+          </button>
+        </div>
+      </Section>
+
+      <p className="foot-note">
+        사주·성격유형·궁합·카톡 통계는 코드로 계산하고, 풀이와 대화는 생성형 AI가 작성해요. 결과는 재미와 참고용이에요.
+      </p>
     </div>
   );
 }
