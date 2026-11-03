@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AI_NOTICE, postApi } from '../lib/ai/client';
+import SaveAnalysisButton from '../components/SaveAnalysisButton';
 import { SITUATIONS, type Situation } from '../lib/ai/personality';
 import type { HubCharacter } from '../App';
 import { AXIS_LABEL, LIKERT, POLE_LABEL, getQuestions, type TestMode } from '../lib/personality/questions';
@@ -161,6 +162,13 @@ function ResultView({
         <div className="result-type">{result.type}</div>
         <div className="result-nick">{profile.nickname}</div>
         <p className="result-summary">{profile.summary}</p>
+        <SaveAnalysisButton
+          type="trait"
+          sourceCharacter="teacher"
+          title={`연애 성향 ${result.type}`}
+          summary={`${result.type} ${profile.nickname} — ${ai ? ai.reading.loveStyle : profile.summary}`}
+          data={{ type: result.type, nickname: profile.nickname, loveStyle: ai?.reading.loveStyle }}
+        />
       </section>
 
       <section className="card">

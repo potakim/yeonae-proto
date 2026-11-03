@@ -2,6 +2,7 @@ import type { HubCharacter } from '../App';
 import { CATEGORY_LABEL, heroUrl, nameOf, type Character } from '../data/characters';
 import type { Screen } from '../App';
 import { Avatar } from '../components/CharacterRow';
+import { formatWhen } from '../lib/sessions/store';
 
 interface Props {
   c: Character;
@@ -10,11 +11,13 @@ interface Props {
   onToggleFavorite: (id: string) => void;
   onClose: () => void;
   onStart: (c: Character, screen?: Screen) => void;
-  /** 최근 세션 (프로토타입: 없음) */
-  recent?: { title: string; when: string } | null;
+  onResume: (c: Character) => void;
+  onAnalyses: (c: Character) => void;
+  /** 최근 세션 */
+  recent?: { title: string; when: number } | null;
 }
 
-export default function CharacterProfile({ c, hub, favorite, onToggleFavorite, onClose, onStart, recent = null }: Props) {
+export default function CharacterProfile({ c, hub, favorite, onToggleFavorite, onClose, onStart, onResume, onAnalyses, recent = null }: Props) {
   const name = nameOf(c, hub);
   const disabled = c.screen === null;
   const hero = heroUrl(c);
@@ -87,7 +90,7 @@ export default function CharacterProfile({ c, hub, favorite, onToggleFavorite, o
             </>
           )}
           <dt>최근 이용 기록</dt>
-          <dd className="muted">{recent ? `${recent.title} · ${recent.when}` : '아직 대화한 적이 없어요'}</dd>
+          <dd className="muted">{recent ? `${recent.title} · ${formatWhen(recent.when)}` : '아직 대화한 적이 없어요'}</dd>
         </dl>
         <p className="ai-label">
           대화와 풀이는 생성형 AI가 작성해요. 결과는 재미와 참고용이에요.
@@ -101,10 +104,10 @@ export default function CharacterProfile({ c, hub, favorite, onToggleFavorite, o
           <span aria-hidden>💬</span>
           {disabled ? '준비 중' : '대화 시작'}
         </button>
-        <button className="profile-action" disabled={!recent} onClick={() => onStart(c)}>
+        <button className="profile-action" disabled={!recent || c.screen !== 'chat'} onClick={() => onResume(c)}>
           <span aria-hidden>↩</span>이어서 대화
         </button>
-        <button className="profile-action" disabled>
+        <button className="profile-action" onClick={() => onAnalyses(c)}>
           <span aria-hidden>📋</span>저장된 분석
         </button>
       </div>

@@ -2,41 +2,47 @@ import type { HubCharacter } from '../App';
 import { CHARACTERS, nameOf, type Character } from '../data/characters';
 import { Avatar } from '../components/CharacterRow';
 import { isOn, setFlag } from '../lib/flags';
+import { useSessionStore } from '../lib/sessions/context';
+import { formatWhen, type Session } from '../lib/sessions/store';
+import { AnalysisList } from '../components/AnalysesSheet';
 
-// 대화 탭 — 최근 대화 목록 (프로토타입: 세션 저장이 없으므로 예시 데이터)
-const SAMPLE: { id: string; last: string; when: string; badge?: string }[] = [
-  { id: 'hub', last: '어제 연락은 결국 안 했어?', when: '오후 9:12', badge: '1' },
-  { id: 'yeosachin', last: '답장 분석 결과 나왔어', when: '오후 6:40', badge: '결과' },
-  { id: 'compat-master', last: '두 사람의 갈등 궁합 결과가 나왔어요', when: '어제', badge: '결과' },
-  { id: 'teacher', last: '애착유형 결과를 같이 볼까?', when: '2일 전' },
-  { id: 'soeun', last: '그 답장은 이렇게 보는 게 맞아', when: '3일 전' },
-];
-
-export function TalkTab({ hub, onOpen }: { hub: HubCharacter; onOpen: (c: Character) => void }) {
+// 대화 탭 — 캐릭터별 최근 세션 (화면설계서 §6.1). 탭하면 그 캐릭터의 가장 최근 세션으로.
+export function TalkTab({ hub, onOpen, onResume }: { hub: HubCharacter; onOpen: (c: Character) => void; onResume: (c: Character, s: Session) => void }) {
+  const store = useSessionStore();
+  const latest = new Map<string, Session>();
+  for (const s of store.listSessions()) if (!latest.has(s.character)) latest.set(s.character, s);
+  const rows = [...latest.values()].sort((a, b) => b.updatedAt - a.updatedAt).map((s) => ({ s, c: CHARACTERS.find((x) => x.id === s.character)! })).filter((r) => r.c);
   return (
     <div className="talk">
       <h1 className="tab-title">대화</h1>
-      <div className="list-card">
-        {SAMPLE.map((s, i) => {
-          const c = CHARACTERS.find((x) => x.id === s.id)!;
-          return (
-            <button key={s.id} className={`chat-list-row${i === SAMPLE.length - 1 ? ' last' : ''}`} onClick={() => onOpen(c)}>
-              <Avatar c={c} size={52} />
-              <span className="chat-list-text">
-                <strong>
-                  {nameOf(c, hub)} <em className="ai-badge">AI</em>
-                </strong>
-                <span>{s.last}</span>
-              </span>
-              <span className="chat-list-meta">
-                <span>{s.when}</span>
-                {s.badge && <em className={s.badge === '결과' ? 'pill violet' : 'pill pink'}>{s.badge}</em>}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-      <p className="foot-note">예시 데이터예요. 세션 저장·사이드바는 다음 단계에서 붙여요.</p>
+      {rows.length === 0 ? (
+        <div className="card">
+          <p>아직 대화가 없어요. 홈에서 캐릭터를 골라 시작해 보세요.</p>
+        </div>
+      ) : (
+        <div className="list-card">
+          {rows.map(({ s, c }, i) => {
+            const last = [...s.messages].reverse().find((m) => m.role === 'assistant');
+            const count = store.listSessions(c.id).length;
+            return (
+              <button key={c.id} className={`chat-list-row${i === rows.length - 1 ? ' last' : ''}`} onClick={() => onResume(c, s)} onContextMenu={(e) => (e.preventDefault(), onOpen(c))}>
+                <Avatar c={c} size={52} />
+                <span className="chat-list-text">
+                  <strong>
+                    {nameOf(c, hub)} <em className="ai-badge">AI</em>
+                  </strong>
+                  <span>{last?.content ?? s.title}</span>
+                </span>
+                <span className="chat-list-meta">
+                  <span>{formatWhen(s.updatedAt)}</span>
+                  {count > 1 && <em className="pill violet">{count}개 상담</em>}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <p className="foot-note">세션은 이 기기에만 저장돼요. 캐릭터를 길게 누르면 프로필이 열려요.</p>
     </div>
   );
 }
@@ -55,7 +61,10 @@ export function IntroTab() {
 }
 
 export function MyTab() {
+  const store = useSessionStore();
   const intro = isOn('intro_tab');
+  const analyses = store.listAnalyses();
+  const sessions = store.listSessions();
   return (
     <div className="talk">
       <h1 className="tab-title">마이</h1>
@@ -66,6 +75,24 @@ export function MyTab() {
             <span className="chev">›</span>
           </button>
         ))}
+      </div>
+      <div className="card dev-card">
+        <p className="card-title">저장된 분석 ({analyses.length})</p>
+        <AnalysisList items={analyses} />
+      </div>
+      <div className="card dev-card">
+        <p className="card-title">데이터</p>
+        <p>
+          상담 세션 {sessions.length}개 · 상대 프로필 {store.listPartners().length}명 · 저장된 분석 {analyses.length}개
+        </p>
+        <button
+          className="btn-text danger"
+          onClick={() => {
+            if (window.confirm('이 기기의 상담·상대·분석 데이터를 모두 삭제할까요?')) store.clearAll();
+          }}
+        >
+          모든 데이터 삭제
+        </button>
       </div>
       <div className="card dev-card">
         <p className="card-title">테스트 설정</p>

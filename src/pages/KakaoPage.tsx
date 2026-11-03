@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AI_NOTICE, postApi } from '../lib/ai/client';
+import SaveAnalysisButton from '../components/SaveAnalysisButton';
 import type { ChatStats, Interest } from '../lib/kakao/stats';
 
 const MAX_IMAGES = 6;
@@ -186,6 +187,13 @@ export default function KakaoPage() {
               ))}
             </div>
             <p className="closing">“{result.reading.closing}”</p>
+            <SaveAnalysisButton
+              type="kakao"
+              sourceCharacter="yeosachin"
+              title="카톡 분석"
+              summary={`호감도 ${result.interest.score}점, 관계 단계 ${result.reading.stage}. ${result.reading.interestComment}`}
+              data={{ score: result.interest.score, stage: result.reading.stage, signals: result.reading.signals }}
+            />
             <p className="ai-label">
               AI가 대화 일부를 바탕으로 추정한 결과예요. {AI_NOTICE}
               <br />

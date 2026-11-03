@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SajuInput } from '../lib/saju';
 import { buildPersonalBundle, buildSharedBundle, KIND_LABEL, type ReadingKind } from '../lib/fortune/reading';
 import type { FlowSignal } from '../lib/fortune/signals';
+import SaveAnalysisButton from './SaveAnalysisButton';
 
 type PersonalKind = Exclude<ReadingKind, 'todayShared'>;
 const TABS: { kind: PersonalKind; label: string }[] = [
@@ -308,6 +309,15 @@ function ReadingView({ kind, r }: { kind: ReadingKind; r: ApiResult }) {
         </p>
       </div>
       <p className="closing">“{x.closing}”</p>
+      {kind !== 'todayShared' && (
+        <SaveAnalysisButton
+          type={kind === 'natal' ? 'saju' : 'fortune'}
+          sourceCharacter="saju-master"
+          title={kind === 'natal' ? '사주 원국 풀이' : `${KIND_LABEL[kind]} 연애운`}
+          summary={`${x.headline}. ${x.loveStyle ?? x.love ?? x.summary ?? ''}`}
+          data={{ kind, headline: x.headline }}
+        />
+      )}
       <p className="ai-label">
         생성형 AI가 사주 신호를 바탕으로 작성한 풀이예요. 재미와 참고용으로만 봐 주세요.
         <br />

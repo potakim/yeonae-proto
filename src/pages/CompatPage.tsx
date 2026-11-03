@@ -2,6 +2,7 @@ import { useState } from 'react';
 import BirthForm from '../components/BirthForm';
 import { MBTI_TYPES, defaultBirth } from '../lib/birth-defaults';
 import { AI_NOTICE, postApi } from '../lib/ai/client';
+import SaveAnalysisButton from '../components/SaveAnalysisButton';
 import { computeCompat, type CompatResult } from '../lib/compat/compat';
 import { calculateSaju, type SajuInput } from '../lib/saju';
 
@@ -114,6 +115,14 @@ export default function CompatPage({ mySaju, myType }: { mySaju: SajuInput | nul
             <div className="compat-score">{result.score}<span>점</span></div>
             <div className="result-nick">{result.grade}</div>
             <p className="hint">{result.scoreMeaning}</p>
+            <SaveAnalysisButton
+              type="match"
+              sourceCharacter="saju-master"
+              title="궁합 결과"
+              partnerAlias={partnerLabel}
+              summary={`궁합 ${result.score}점(${result.grade}). ${reading ? reading.reading.summary : result.scoreMeaning}`}
+              data={{ score: result.score, grade: result.grade, items: result.items.map((i) => ({ title: i.title, delta: i.delta })) }}
+            />
           </section>
 
           <section className="card">
