@@ -1,3 +1,5 @@
+import { PERSONAS, personaBlock, type Persona } from './personas.js';
+
 /**
  * 허브 채팅 (아는 형/언니) — 안전 장치 + 프롬프트 + 소개 카드.
  *
@@ -6,7 +8,6 @@
  *  2) LLM 이 스스로 분류한 category 가 위험이면 답을 고정 응답으로 교체
  */
 export const CHAT_PROMPT_VERSION = 'chat-2026-11-03.1';
-import { PERSONAS, personaBlock, type Persona } from './personas';
 export type Hub = '형' | '언니';
 
 export const CARDS = ['none', 'kakao', 'compat', 'fortune', 'personality'] as const;
