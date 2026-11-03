@@ -1766,3 +1766,52 @@ input[type='file'] {
 .dev-card {
   margin-top: 12px;
 }
+
+/* ── v0.3: 실사 아바타 · 대화방 헤더 · 프로필 추가 기능 ── */
+.avatar {
+  overflow: hidden;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.profile-hero.has-image {
+  background-size: cover;
+  background-position: center top;
+  min-height: 66vh;
+}
+.extra-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.chip-btn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--soft-violet);
+  color: var(--brand-violet);
+  font-size: 14px;
+  font-weight: 700;
+}
+.chat-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+.chat-head div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.chat-head strong {
+  font-size: 16px;
+}
+.chat-head span {
+  font-size: 12px;
+  color: var(--text-3);
+}

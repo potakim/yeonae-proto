@@ -1,5 +1,6 @@
 import type { HubCharacter } from '../App';
-import { CATEGORY_LABEL, nameOf, type Character } from '../data/characters';
+import { CATEGORY_LABEL, heroUrl, nameOf, type Character } from '../data/characters';
+import type { Screen } from '../App';
 import { Avatar } from '../components/CharacterRow';
 
 interface Props {
@@ -8,7 +9,7 @@ interface Props {
   favorite: boolean;
   onToggleFavorite: (id: string) => void;
   onClose: () => void;
-  onStart: (c: Character) => void;
+  onStart: (c: Character, screen?: Screen) => void;
   /** 최근 세션 (프로토타입: 없음) */
   recent?: { title: string; when: string } | null;
 }
@@ -16,13 +17,16 @@ interface Props {
 export default function CharacterProfile({ c, hub, favorite, onToggleFavorite, onClose, onStart, recent = null }: Props) {
   const name = nameOf(c, hub);
   const disabled = c.screen === null;
+  const hero = heroUrl(c);
   return (
     <div className="profile" style={{ ['--hero' as string]: c.bg }}>
       {/* 풀블리드 영역 — 일러스트가 오면 background-image 로 교체 */}
-      <div className="profile-hero">
-        <div className="profile-hero-art" aria-hidden>
-          {c.emoji}
-        </div>
+      <div className={`profile-hero${hero ? ' has-image' : ''}`} style={hero ? { backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0.7) 100%), url(${hero})` } : undefined}>
+        {!hero && (
+          <div className="profile-hero-art" aria-hidden>
+            {c.emoji}
+          </div>
+        )}
         <div className="profile-top">
           <button className="hero-btn" onClick={onClose} aria-label="닫기">
             ✕
@@ -70,10 +74,26 @@ export default function CharacterProfile({ c, hub, favorite, onToggleFavorite, o
           <dd>{c.when.join(' · ')}</dd>
           <dt>이용 가격 / 무료 범위</dt>
           <dd>{c.pricing}</dd>
+          {c.extra && (
+            <>
+              <dt>이 캐릭터의 다른 기능</dt>
+              <dd className="extra-chips">
+                {c.extra.map((e) => (
+                  <button key={e.screen} className="chip-btn" onClick={() => onStart(c, e.screen)}>
+                    {e.label} ›
+                  </button>
+                ))}
+              </dd>
+            </>
+          )}
           <dt>최근 이용 기록</dt>
           <dd className="muted">{recent ? `${recent.title} · ${recent.when}` : '아직 대화한 적이 없어요'}</dd>
         </dl>
-        <p className="ai-label">대화와 풀이는 생성형 AI가 작성해요. 결과는 재미와 참고용이에요.</p>
+        <p className="ai-label">
+          대화와 풀이는 생성형 AI가 작성해요. 결과는 재미와 참고용이에요.
+          {c.image && ' 캐릭터 이미지는 AI로 생성한 가상 인물이에요.'}
+          {c.placeholder && ' 이 캐릭터의 페르소나·이미지는 준비 중이에요.'}
+        </p>
       </div>
 
       <div className="profile-actions">

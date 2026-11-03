@@ -1,5 +1,5 @@
 import type { Character } from '../data/characters';
-import { nameOf } from '../data/characters';
+import { avatarUrl, nameOf } from '../data/characters';
 import type { HubCharacter } from '../App';
 
 interface Props {
@@ -14,13 +14,10 @@ interface Props {
 }
 
 export function Avatar({ c, size = 56 }: { c: Character; size?: number }) {
+  const src = avatarUrl(c);
   return (
-    <span
-      className="avatar"
-      style={{ width: size, height: size, background: c.bg, fontSize: Math.round(size * 0.5) }}
-      aria-hidden
-    >
-      {c.emoji}
+    <span className="avatar" style={{ width: size, height: size, background: c.bg, fontSize: Math.round(size * 0.5) }} aria-hidden>
+      {src ? <img src={src} alt="" width={size} height={size} loading="lazy" /> : c.emoji}
     </span>
   );
 }

@@ -9,7 +9,7 @@ import CharacterProfile from './pages/CharacterProfile';
 import { IntroTab, MyTab, TalkTab } from './pages/TabStubs';
 import BottomTab, { type Tab } from './components/BottomTab';
 import { calculateSaju, type SajuInput } from './lib/saju';
-import { nameOf, type Character } from './data/characters';
+import { hubOf, nameOf, type Character } from './data/characters';
 import { useFavorites } from './lib/favorites';
 
 export type Screen = 'home' | 'saju' | 'personality' | 'chat' | 'compat' | 'kakao';
@@ -31,11 +31,12 @@ export default function App() {
     window.scrollTo(0, 0);
   };
   const openProfile = (c: Character) => setProfile(c);
-  const startWith = (c: Character) => {
-    if (!c.screen) return;
+  const startWith = (c: Character, screen?: Screen) => {
+    const target = screen ?? c.screen;
+    if (!target) return;
     setProfile(null);
     setCurrent(c);
-    go(c.screen);
+    go(target);
   };
   const backHome = () => {
     setCurrent(null);
@@ -50,8 +51,8 @@ export default function App() {
     }
   })();
 
-  // 소은누나/성현이형은 프로토타입에서 허브 대화 엔진을 공유(이름만 다름). 실서비스는 캐릭터별 프롬프트.
-  const chatHub: HubCharacter = current?.id === 'soeun' ? '언니' : current?.id === 'seonghyun' ? '형' : hub;
+  // 채팅 엔진은 공용, 페르소나(프롬프트)는 캐릭터별 — 허브 카드 '소개받기'로 들어오면 current 가 없으므로 성별 허브
+  const chatCharacter = current?.persona ? current : hubOf(hub);
   const title = current ? nameOf(current, hub) : '모두의 연애';
   const inTabRoot = screen === 'home';
 
@@ -73,7 +74,7 @@ export default function App() {
         {screen === 'home' && tab === 'my' && <MyTab />}
         {screen === 'saju' && <SajuPage onSaved={setMySaju} />}
         {screen === 'personality' && <PersonalityPage hub={hub} onType={onType} />}
-        {screen === 'chat' && <ChatPage hub={chatHub} go={go} profile={{ type: myType, dayPillar }} />}
+        {screen === 'chat' && <ChatPage key={chatCharacter.id} hub={hub} character={chatCharacter} go={go} profile={{ type: myType, dayPillar }} />}
         {screen === 'compat' && <CompatPage mySaju={mySaju} myType={myType} />}
         {screen === 'kakao' && <KakaoPage />}
       </main>

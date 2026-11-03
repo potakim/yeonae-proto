@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { HubCharacter } from '../App';
-import { CHARACTERS, SECTIONS, type Character } from '../data/characters';
+import { SECTIONS, byId, visibleFor, type Character } from '../data/characters';
 import { isOn } from '../lib/flags';
 import CharacterRow from '../components/CharacterRow';
 
@@ -41,7 +41,7 @@ function Section({
 
 export default function Home({ hub, setHub, favorites, onOpen }: Props) {
   const introOn = isOn('intro_tab');
-  const visible = CHARACTERS.filter((c) => !c.flag || (c.flag === 'intro_tab' && introOn));
+  const visible = visibleFor(hub, introOn);
   const favs = favorites.ids.map((id) => visible.find((c) => c.id === id)).filter(Boolean) as Character[];
 
   return (
@@ -97,17 +97,17 @@ export default function Home({ hub, setHub, favorites, onOpen }: Props) {
 
       <Section icon="✨" title="추천 서비스">
         <div className="reco-scroll">
-          <button className="reco-card" onClick={() => onOpen(CHARACTERS[1])}>
+          <button className="reco-card" onClick={() => onOpen(byId('soeun')!)}>
             <span className="reco-label">지금 나에게 필요한 상담</span>
             <strong>연락이 뜸해졌다면</strong>
             <span>소은누나에게 물어봐요</span>
           </button>
-          <button className="reco-card violet" onClick={() => onOpen(CHARACTERS[5])}>
+          <button className="reco-card violet" onClick={() => onOpen(byId('saju-master')!)}>
             <span className="reco-label">새로 열린 서비스</span>
             <strong>오늘의 연애운</strong>
             <span>사주마스터 · 무료</span>
           </button>
-          <button className="reco-card" onClick={() => onOpen(CHARACTERS[4])}>
+          <button className="reco-card" onClick={() => onOpen(byId('teacher')!)}>
             <span className="reco-label">상담 데이터 기반 추천</span>
             <strong>내 연애 성향부터</strong>
             <span>선생님 · 문항 무료</span>

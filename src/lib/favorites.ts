@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 
 // 즐겨찾기 (화면설계서 v0.2 §4.1). 프로토타입은 localStorage, 실서비스는 favorites 테이블.
 const KEY = 'yeonae.favorites';
-const DEFAULT = ['hub'];
+const DEFAULT = ['hub-m', 'hub-f']; // 성별에 따라 한쪽만 보인다
 
 function read(): string[] {
   try {

@@ -5,16 +5,17 @@
  *  1) 입력 규칙 검사(정규식)로 먼저 걸러 고정 응답 → LLM 호출 안 함
  *  2) LLM 이 스스로 분류한 category 가 위험이면 답을 고정 응답으로 교체
  */
-export const CHAT_PROMPT_VERSION = 'chat-2026-10-28.2';
+export const CHAT_PROMPT_VERSION = 'chat-2026-11-03.1';
+import { PERSONAS, personaBlock, type Persona } from './personas';
 export type Hub = '형' | '언니';
 
 export const CARDS = ['none', 'kakao', 'compat', 'fortune', 'personality'] as const;
 export type Card = (typeof CARDS)[number];
 export const CARD_INFO: Record<Exclude<Card, 'none'>, { who: string; title: string; desc: string }> = {
   kakao: { who: '💬 여사친', title: '카톡 분석', desc: '카톡 캡처로 상대 호감도·관계 단계를 읽고 답장도 추천해 줘요' },
-  compat: { who: '🔮 모두 무당', title: '사주×MBTI 궁합', desc: '그 사람 생일만 알면 두 사람 기운을 맞춰 봐요' },
-  fortune: { who: '🔮 모두 무당', title: '연애운', desc: '오늘·이번 주·올해 연애 흐름을 봐요' },
-  personality: { who: '🧠 아는 형/언니', title: '연애 성향 테스트', desc: '32문항으로 내 연애 스타일을 알아봐요' },
+  compat: { who: '🔮 사주마스터', title: '사주×MBTI 궁합', desc: '그 사람 생일만 알면 두 사람 기운을 맞춰 봐요' },
+  fortune: { who: '🔮 사주마스터', title: '연애운', desc: '오늘·이번 주·올해 연애 흐름을 봐요' },
+  personality: { who: '📝 선생님', title: '연애 성향 테스트', desc: '32문항으로 내 연애 스타일을 알아봐요' },
 };
 
 export const CATEGORIES = ['normal', 'crisis', 'violence_victim', 'harmful_request', 'sexual'] as const;
@@ -68,8 +69,7 @@ export function sanitizeMemo(v: unknown): ChatMemo {
   };
 }
 
-export const greetingOf = (hub: Hub) =>
-  `안녕, 나 아는 ${hub}야. 요즘 연애 쪽으로 마음 쓰이는 거 있어요? 썸이든 이별이든 편하게 털어놔요.`;
+export const greetingOf = (hub: Hub) => PERSONAS[hub === '언니' ? 'hub-f' : 'hub-m'].greeting;
 
 /** 카드 소개는 코드가 최종 결정: 사용자 발화 2번 이상 + 이미 보여 준 카드는 다시 안 띄움 */
 export function gateCard(card: Card, userTurns: number, shown: Card[]): Card {
@@ -87,12 +87,22 @@ export function stripCardMention(reply: string): string {
   return /소개|여사친|무당|테스트 해|분석해 볼|궁합|연애운/.test(last) ? parts.slice(0, -1).join(' ') : reply;
 }
 
-export function chatSystem(hub: Hub, profile: { type?: string | null; dayPillar?: string | null }, memo: ChatMemo, shown: Card[], userTurns = 2): string {
+export function chatSystem(
+  hub: Hub,
+  profile: { type?: string | null; dayPillar?: string | null },
+  memo: ChatMemo,
+  shown: Card[],
+  userTurns = 2,
+  persona: Persona = PERSONAS[hub === '언니' ? 'hub-f' : 'hub-m'],
+): string {
   const p = [profile.type ? `성격유형 ${profile.type}` : null, profile.dayPillar ? `${profile.dayPillar} 일주` : null].filter(Boolean).join(', ');
-  return `너는 연애 상담 앱 '모두의 연애'의 허브 캐릭터 "아는 ${hub}"야. 연애 고민을 편하게 털어놓는 상대. 솔직하고 직설적이지만 따뜻해.
-말투: 친근한 해요체("~해요", "~거든요")가 기본, 가끔 짧은 반말 감탄("에이~", "야 그건 좀")만 섞어. 비속어·과한 유행어 금지. 처음부터 끝까지 같은 말투를 유지해.
-
-대화는 네가 먼저 이렇게 인사하며 시작됐어: "${greetingOf(hub)}"
+  const cardRule =
+    persona.cardPolicy === 'never'
+      ? '- card 는 항상 none. 다른 캐릭터를 소개하지 마.'
+      : persona.cardPolicy === 'passive'
+        ? '- 네 전문 밖(카톡 패턴 분석, 궁합·운세, 성향 테스트)이 분명히 필요할 때만 card 로 소개하고, 그 외엔 none.'
+        : '- 상황과 고민이 어느 정도 보이면 card 로 전문 캐릭터를 소개해. 맞는 게 없으면 none.';
+  return `${personaBlock(persona)}
 
 <memo>
 지금까지 사용자가 직접 말한 내용 (이게 대화의 기준이야)
@@ -114,11 +124,11 @@ ${userTurns < 2 ? '이번 답에서는 card 를 반드시 none 으로 해. 아�
 - 사용자가 정정하면 memo 도 정정해.
 
 ## 소개 카드
-- 상황과 고민이 어느 정도 보이면 card 로 전문 캐릭터를 소개해. 맞는 게 없으면 none.
+${cardRule}
   · kakao: 카톡·연락 패턴, 상대 마음이 궁금할 때 → 여사친
-  · compat: 그 사람과 잘 맞는지 궁금할 때 → 무당
-  · fortune: 인연이 언제 오는지, 연애운·시기가 궁금할 때 → 무당
-  · personality: 내 연애 스타일·반복되는 패턴이 궁금할 때 → 성격 테스트
+  · compat: 그 사람과 잘 맞는지 궁금할 때 → 사주마스터
+  · fortune: 인연이 언제 오는지, 연애운·시기가 궁금할 때 → 사주마스터
+  · personality: 내 연애 스타일·반복되는 패턴이 궁금할 때 → 선생님
 - 카드를 고르면 reply 마지막 한 문장으로 자연스럽게 연결해. 카드가 none 이면 카드 얘기를 하지 마.
 
 ## 안전

@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import type { HubCharacter, Screen } from '../App';
 import { postApi } from '../lib/ai/client';
-import { CARD_INFO, EMPTY_MEMO, greetingOf, type Card, type ChatMemo } from '../lib/ai/chat';
+import { CARD_INFO, EMPTY_MEMO, type Card, type ChatMemo } from '../lib/ai/chat';
+import { PERSONAS, drawTarot } from '../lib/ai/personas';
+import { nameOf, type Character } from '../data/characters';
+import { Avatar } from '../components/CharacterRow';
 
 interface Msg {
   role: 'user' | 'assistant';
@@ -14,14 +17,17 @@ const CARD_SCREEN: Record<Exclude<Card, 'none'>, Screen> = { kakao: 'kakao', com
 
 export default function ChatPage({
   hub,
+  character,
   go,
   profile,
 }: {
   hub: HubCharacter;
+  character: Character;
   go: (s: Screen) => void;
   profile: { type: string | null; dayPillar: string | null };
 }) {
-  const greet = greetingOf(hub);
+  const persona = PERSONAS[character.persona ?? (hub === '언니' ? 'hub-f' : 'hub-m')];
+  const greet = persona.greeting;
   // 서버가 돌려준 대화 메모(사용자가 말한 사실). 다음 요청에 그대로 돌려보내 맥락을 유지한다
   const [memo, setMemo] = useState<ChatMemo>(EMPTY_MEMO);
   const [msgs, setMsgs] = useState<Msg[]>([]);
@@ -35,8 +41,10 @@ export default function ChatPage({
   }, [msgs, loading]);
 
   const send = async () => {
-    const text = input.trim();
-    if (!text || loading) return;
+    const typed = input.trim();
+    if (!typed || loading) return;
+    // 타로: 카드는 코드가 뽑아 사용자 메시지에 붙인다 (LLM 이 임의로 뽑지 못하게)
+    const text = persona.id === 'tarot' ? `${typed}\n[카드: ${(({ name, reversed }) => `${name} (${reversed ? '역방향' : '정방향'})`)(drawTarot())}]` : typed;
     const next: Msg[] = [...msgs, { role: 'user', content: text }];
     setMsgs(next);
     setInput('');
@@ -46,6 +54,7 @@ export default function ChatPage({
       const shownCards = msgs.flatMap((m) => (m.card && m.card !== 'none' ? [m.card] : []));
       const r = await postApi<{ reply: string; card: Card; memo: ChatMemo; safety: { category: string } | null }>('/api/chat', {
         hub,
+        character: persona.id,
         profile,
         memo,
         shownCards,
@@ -56,16 +65,23 @@ export default function ChatPage({
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setMsgs(msgs); // 실패한 메시지는 입력창으로 되돌림
-      setInput(text);
+      setInput(typed);
     } finally {
       setLoading(false);
     }
   };
 
-  const who = hub === '형' ? '🧢 아는 형' : '🎀 아는 언니';
+  const who = nameOf(character, hub);
 
   return (
     <div className="chat">
+      <div className="chat-head">
+        <Avatar c={character} size={44} />
+        <div>
+          <strong>{who}</strong>
+          <span>{character.tagline}</span>
+        </div>
+      </div>
       <p className="hint center">AI가 답하는 대화예요. 대화 내용은 저장하지 않아요.</p>
       <div className="chat-list">
         <Bubble who={who} text={greet} />

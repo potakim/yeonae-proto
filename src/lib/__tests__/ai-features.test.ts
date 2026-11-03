@@ -276,7 +276,27 @@ describe('허브 채팅 일관성', () => {
     const c = makeCaller([{ category: 'normal', focus: '인사', memo: { situation: '모름', concern: '', partner: '', facts: [] }, reply: '반가워요. 무슨 일 있어요?', card: 'none' }]);
     await handleChat(req({ hub: '언니', messages: [{ role: 'user', content: '안녕하세요' }] }), { env: {}, callModel: c.fn });
     expect(c.calls[0].system).toContain('card 를 반드시 none');
-    expect(c.calls[0].system).toContain('안녕, 나 아는 언니야');
+    expect(c.calls[0].system).toContain('안녕, 나 고은언니야'); // 언니 허브 = 고은언니 페르소나
+  });
+
+  it('character 로 페르소나를 고르면 그 캐릭터 원칙·인사가 프롬프트에 들어가고 카드 정책이 바뀐다', async () => {
+    const c = makeCaller([
+      { category: 'normal', focus: '사실 확인', memo: { situation: '연애중', concern: '연락 감소', partner: '', facts: [] }, reply: '일단 확인된 사실부터 보자.', card: 'none' },
+      { category: 'normal', focus: '질문', memo: { situation: '모름', concern: '', partner: '', facts: [] }, reply: '카드를 보자.', card: 'none' },
+    ]);
+    await handleChat(req({ hub: '형', character: 'soeun', messages: [{ role: 'user', content: '남친이 연락이 줄었어요' }] }), { env: {}, callModel: c.fn });
+    expect(c.calls[0].system).toContain('소은누나(박소은, 25세, ENTP)');
+    expect(c.calls[0].system).toContain('사건 기반 조언');
+    expect(c.calls[0].system).toContain('분명히 필요할 때만 card');
+    const r2 = await handleChat(req({ hub: '형', character: 'tarot', messages: [{ role: 'user', content: '연락할까요?\n[카드: 별 (정방향)]' }] }), { env: {}, callModel: c.fn });
+    expect(c.calls[1].system).toContain('card 는 항상 none');
+    expect(((await r2.json()) as { meta: { character: string } }).meta.character).toBe('tarot');
+  });
+
+  it('모르는 character 는 성별 허브로 떨어진다', async () => {
+    const c = makeCaller([{ category: 'normal', focus: '', memo: { situation: '모름', concern: '', partner: '', facts: [] }, reply: '응', card: 'none' }]);
+    await handleChat(req({ hub: '형', character: 'nope', messages: [{ role: 'user', content: '안녕' }] }), { env: {}, callModel: c.fn });
+    expect(c.calls[0].system).toContain('기훈형(최기훈, 34세, ESFJ)');
   });
 });
 
