@@ -12,6 +12,13 @@ describe('페르소나 · 캐릭터 데이터', () => {
       expect(b).toContain(p.principles[0]);
     }
     expect(isPersonaId('soeun')).toBe(true);
+    expect(isPersonaId('seohwa')).toBe(true);
+    // 노션 설정과의 일치: 성현이형·서화는 반말, 고은언니는 31세, 서화 few-shot 포함
+    expect(PERSONAS.seonghyun.tone).toContain('항상 반말');
+    expect(PERSONAS.seohwa.tone).toContain('반말');
+    expect(PERSONAS['hub-f'].age).toBe(31);
+    expect(personaBlock(PERSONAS.seohwa)).toContain('답변 예시');
+    expect(personaBlock(PERSONAS['hub-m'])).toContain('하지 않는 것');
     expect(isPersonaId('hub')).toBe(false);
   });
 

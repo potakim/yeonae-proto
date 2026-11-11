@@ -67,7 +67,7 @@ export default function CompatPage({ mySaju, myType }: { mySaju: SajuInput | nul
     <div className="stack">
       <h2 className="page-title">사주 × MBTI 궁합</h2>
       <section className="card bubble">
-        <div className="bubble-who">🔮 모두 무당</div>
+        <div className="bubble-who">🔮 서화</div>
         <p>그 사람 생일 알아요? 이름은 필요 없어요. 생년월일이랑 아는 만큼만 알려 주면 두 사람 기운을 맞춰 볼게요.</p>
       </section>
 
@@ -150,7 +150,7 @@ export default function CompatPage({ mySaju, myType }: { mySaju: SajuInput | nul
                   ['끌림과 잘 맞는 점', reading.reading.chemistry],
                   ['대화와 생활', reading.reading.communication],
                   ['부딪히는 지점', reading.reading.conflict],
-                  ['무당의 조언', reading.reading.advice],
+                  ['서화의 조언', reading.reading.advice],
                 ] as const
               ).map(([k, v]) => (
                 <div key={k} className="reading-block">
@@ -165,7 +165,7 @@ export default function CompatPage({ mySaju, myType }: { mySaju: SajuInput | nul
             </article>
           ) : (
             <button className="btn-primary" disabled={loading} onClick={askAi}>
-              {loading ? '무당이 두 사람 기운을 맞춰 보는 중… (20~40초)' : '무당에게 궁합 풀이 듣기 (AI)'}
+              {loading ? '서화가 두 사람 기운을 맞춰 보는 중… (20~40초)' : '서화에게 궁합 풀이 듣기 (AI)'}
             </button>
           )}
         </div>

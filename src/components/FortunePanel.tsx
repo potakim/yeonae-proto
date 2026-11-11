@@ -102,7 +102,7 @@ export default function FortunePanel({ input }: { input: SajuInput }) {
 
   return (
     <section className="card fortune">
-      <h3 className="card-title">🔮 운세 · 무당 풀이</h3>
+      <h3 className="card-title">🔮 운세 · 서화 풀이</h3>
       <div className="segmented tabs4">
         {TABS.map((t) => (
           <button key={t.kind} className={kind === t.kind ? 'active' : ''} onClick={() => setKind(t.kind)}>
@@ -141,7 +141,7 @@ export default function FortunePanel({ input }: { input: SajuInput }) {
       </details>
 
       <button className="btn-primary" disabled={loading !== null} onClick={() => request(kind)}>
-        {loading === kind ? '무당이 풀이를 쓰는 중… (20~40초)' : kind === 'natal' ? '원국 풀이 받기' : `${KIND_LABEL[kind]} 풀이 받기`}
+        {loading === kind ? '서화가 풀이를 쓰는 중… (20~40초)' : kind === 'natal' ? '원국 풀이 받기' : `${KIND_LABEL[kind]} 풀이 받기`}
       </button>
       {error && <p className="error">풀이를 받지 못했어요: {error}</p>}
 

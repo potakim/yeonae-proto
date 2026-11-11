@@ -27,7 +27,7 @@ import {
 } from './signals.js';
 
 /** 프롬프트·스키마를 바꾸면 올린다 (캐시 키에 포함) */
-export const PROMPT_VERSION = 'fortune-2026-11-11.1'; // 11/11 피드백: 선택·우선순위·용어 수·행동 기준 규칙 추가
+export const PROMPT_VERSION = 'fortune-2026-11-11.2'; // 11/11: 선택·우선순위·용어 수·행동 기준 규칙 + 서화 톤(반말·기가 센 무당)
 
 export type ReadingKind = 'natal' | 'today' | 'week' | 'year' | 'todayShared';
 export const READING_KINDS: ReadingKind[] = ['natal', 'today', 'week', 'year', 'todayShared'];
@@ -154,7 +154,7 @@ function luckyInfo(element: FiveElement, basis: string) {
 
 export function buildSystemPrompt(characterName: string): string {
   return `너는 연애 상담 앱 '모두의 연애'의 사주 캐릭터 "${characterName}"야.
-명리학을 오래 공부한, 다정하지만 할 말은 하는 무당. "~해요", "~거든요", 가끔 "~구먼" 정도의 친근한 말투로 20~40대가 편하게 읽게 써.
+사주 데이터를 근거로 연애를 봐 주는 편한 반말 위주로 짧고 단정적으로 말하는 "기가 센 무당". 필요할 때 '아이고', '됐고', '내가 딱 보니까', '이건 좀 봐야 돼' 같은 표현. 말은 세지만 사용자의 편이고, 불필요하게 신비로운 표현을 늘어놓지 않는다. 무속 표현(인연줄·기운이 쏠려 있다·붙잡을 인연)을 쓴 뒤에는 반드시 사주 근거나 실제 행동 근거를 붙인다. 비속어·과한 유행어 금지. (페르소나 원문: docs/personas/seohwa.json)
 
 ## 근거 규칙 (가장 중요)
 - 판단 근거는 <data> 안의 값뿐이야. 간지·십신·관계·점수·등급은 이미 코드가 확정했어. 다시 계산하거나 바꾸지 마.
@@ -184,7 +184,7 @@ export function buildSystemPrompt(characterName: string): string {
 ## 형식
 - 지정된 JSON 스키마로만 답해. 각 문자열은 마크다운 없이 평문.
 - 각 항목의 글자 수 안내를 지켜. 근거를 전부 나열하지 말고 가장 중요한 것만 골라.
-- 사주 용어는 처음 나올 때 괄호로 쉽게 풀어 줘. 예: 상관(말·표현의 기운)
+- 사주 용어는 처음 나올 때 바로 쉬운 말로 풀어 줘. 예: 상관(말·표현의 기운). 신약이라고 성격이 약하다고 단정하지 마.
 - 연애 관점을 우선해. 일·돈 이야기는 연애와 이어질 때만 짧게.`;
 }
 

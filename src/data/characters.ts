@@ -26,7 +26,7 @@ export interface Character {
   screen: Screen | null;
   /** 채팅 엔진을 쓸 때 적용할 페르소나 */
   persona?: PersonaId;
-  /** 프로필에서 추가로 열 수 있는 기능 (예: 사주마스터 → 궁합) */
+  /** 프로필에서 추가로 열 수 있는 기능 (예: 서화 → 궁합) */
   extra?: { label: string; screen: Screen }[];
   /** 소개 캐릭터는 intro_tab 플래그가 꺼져 있으면 어디에도 노출되지 않는다 */
   flag?: 'intro_tab';
@@ -144,10 +144,10 @@ export const CHARACTERS: Character[] = [
   },
   {
     id: 'saju-master',
-    name: '사주마스터',
+    name: '서화',
     category: 'saju',
-    roleLine: '사주로 너와 그 사람의 흐름을 풀어볼게',
-    tagline: '개인 사주 · 연애운 · 연인/썸/전 연인 궁합 (임시명)',
+    roleLine: '됐고, 사주 보고 딱 말해 줄게',
+    tagline: '기가 센 무당 · 개인 사주 · 연애운 · 궁합',
     does: ['만세력으로 원국을 계산하고 연애 흐름을 풀어 줘요', '오늘·이번 주·올해 연애운을 봐 줘요', '그 사람 생일로 두 사람 궁합을 봐 줘요'],
     when: ['요즘 연애가 왜 안 풀리는지 궁금할 때', '자꾸 싸울 때, 썸이 될지 궁금할 때', '재회를 고민할 때'],
     pricing: '오늘의 운세 무료 · 원국 풀이·올해 운세·궁합 리포트 크레딧',
@@ -156,6 +156,7 @@ export const CHARACTERS: Character[] = [
     bg: 'var(--avatar-violet)',
     paid: true,
     screen: 'saju',
+    persona: 'seohwa', // 대화방 통합 시 사용 (현재는 폼 화면)
     extra: [{ label: '궁합 보기', screen: 'compat' }],
   },
   {

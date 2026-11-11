@@ -1,5 +1,5 @@
 /**
- * POST /api/compat — 사주×MBTI 궁합. 두 사람 원국과 점수는 서버 코드가 계산하고 무당이 해석.
+ * POST /api/compat — 사주×MBTI 궁합. 두 사람 원국과 점수는 서버 코드가 계산하고 서화(사주 캐릭터)가 해석.
  * 본문: { me: { birth, mbti?, label? }, partner: { birth, mbti?, label? }, dryRun? }
  * 상대는 실명 대신 별칭만 받는다. 생년월일 원본은 저장하지 않는다.
  */
@@ -35,7 +35,7 @@ export async function handleCompat(request: Request, deps: HandlerDeps = {}): Pr
   }
 
   const model = modelFor(env, 'report');
-  const characterName = '모두 무당';
+  const characterName = '서화';
   const cacheKey = await sha256Hex(compatCacheSource(a, b, compat, model, characterName));
   const meta = { model, promptVersion: COMPAT_PROMPT_VERSION, compatVersion: compat.version, cacheKey };
   if (body.dryRun === true) return json(200, { compat, prompt: { system: compatSystem(characterName), user: compatUser(compat), schema: compatSchema }, meta: { ...meta, dryRun: true } });

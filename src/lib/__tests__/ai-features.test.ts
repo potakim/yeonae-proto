@@ -296,7 +296,7 @@ describe('허브 채팅 일관성', () => {
     const c = makeCaller([{ category: 'normal', focus: '인사', memo: { situation: '모름', concern: '', partner: '', facts: [] }, reply: '반가워요. 무슨 일 있어요?', card: 'none' }]);
     await handleChat(req({ hub: '언니', messages: [{ role: 'user', content: '안녕하세요' }] }), { env: {}, callModel: c.fn });
     expect(c.calls[0].system).toContain('card 를 반드시 none');
-    expect(c.calls[0].system).toContain('안녕, 나 고은언니야'); // 언니 허브 = 고은언니 페르소나
+    expect(c.calls[0].system).toContain('고은언니(이고은, 31세, ISFJ)'); // 언니 허브 = 고은언니 페르소나
   });
 
   it('character 로 페르소나를 고르면 그 캐릭터 원칙·인사가 프롬프트에 들어가고 카드 정책이 바뀐다', async () => {

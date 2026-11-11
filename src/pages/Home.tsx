@@ -105,7 +105,7 @@ export default function Home({ hub, setHub, favorites, onOpen }: Props) {
           <button className="reco-card violet" onClick={() => onOpen(byId('saju-master')!)}>
             <span className="reco-label">새로 열린 서비스</span>
             <strong>오늘의 연애운</strong>
-            <span>사주마스터 · 무료</span>
+            <span>서화 · 무료</span>
           </button>
           <button className="reco-card" onClick={() => onOpen(byId('teacher')!)}>
             <span className="reco-label">상담 데이터 기반 추천</span>

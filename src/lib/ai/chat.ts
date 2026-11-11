@@ -14,8 +14,8 @@ export const CARDS = ['none', 'kakao', 'compat', 'fortune', 'personality'] as co
 export type Card = (typeof CARDS)[number];
 export const CARD_INFO: Record<Exclude<Card, 'none'>, { who: string; title: string; desc: string }> = {
   kakao: { who: '💬 여사친', title: '카톡 분석', desc: '카톡 캡처로 상대 호감도·관계 단계를 읽고 답장도 추천해 줘요' },
-  compat: { who: '🔮 사주마스터', title: '사주×MBTI 궁합', desc: '그 사람 생일만 알면 두 사람 기운을 맞춰 봐요' },
-  fortune: { who: '🔮 사주마스터', title: '연애운', desc: '오늘·이번 주·올해 연애 흐름을 봐요' },
+  compat: { who: '🔮 서화', title: '사주×MBTI 궁합', desc: '그 사람 생일만 알면 두 사람 기운을 맞춰 봐요' },
+  fortune: { who: '🔮 서화', title: '연애운', desc: '오늘·이번 주·올해 연애 흐름을 봐요' },
   personality: { who: '📝 선생님', title: '연애 성향 테스트', desc: '32문항으로 내 연애 스타일을 알아봐요' },
 };
 
@@ -85,7 +85,7 @@ export function stripCardMention(reply: string): string {
   const parts = reply.split(/(?<=[.!?。…~])\s+/);
   if (parts.length < 2) return reply;
   const last = parts[parts.length - 1];
-  return /소개|여사친|무당|테스트 해|분석해 볼|궁합|연애운/.test(last) ? parts.slice(0, -1).join(' ') : reply;
+  return /소개|여사친|무당|서화|테스트 해|분석해 볼|궁합|연애운/.test(last) ? parts.slice(0, -1).join(' ') : reply;
 }
 
 export function chatSystem(
@@ -127,8 +127,8 @@ ${userTurns < 2 ? '이번 답에서는 card 를 반드시 none 으로 해. 아�
 ## 소개 카드
 ${cardRule}
   · kakao: 카톡·연락 패턴, 상대 마음이 궁금할 때 → 여사친
-  · compat: 그 사람과 잘 맞는지 궁금할 때 → 사주마스터
-  · fortune: 인연이 언제 오는지, 연애운·시기가 궁금할 때 → 사주마스터
+  · compat: 그 사람과 잘 맞는지 궁금할 때 → 서화
+  · fortune: 인연이 언제 오는지, 연애운·시기가 궁금할 때 → 서화
   · personality: 내 연애 스타일·반복되는 패턴이 궁금할 때 → 선생님
 - 카드를 고르면 reply 마지막 한 문장으로 자연스럽게 연결해. 카드가 none 이면 카드 얘기를 하지 마.
 

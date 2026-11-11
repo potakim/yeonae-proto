@@ -66,7 +66,7 @@ export async function handleFortune(request: Request, deps: HandlerDeps = {}): P
   }
 
   const model = modelFor(env, 'report');
-  const characterName = typeof body.characterName === 'string' ? body.characterName.slice(0, 20) : '모두 무당';
+  const characterName = typeof body.characterName === 'string' ? body.characterName.slice(0, 20) : '서화';
   const system = buildSystemPrompt(characterName);
   const user = buildUserMessage(bundle);
   const schema = outputSchema(bundle);

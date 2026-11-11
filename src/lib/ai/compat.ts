@@ -1,12 +1,11 @@
-/** 궁합 해석 (무당) — 프롬프트·스키마·캐시 키. 점수·근거는 compat.ts 가 확정 */
+/** 궁합 해석 (서화) — 프롬프트·스키마·캐시 키. 점수·근거는 compat.ts 가 확정 */
 import { COMPAT_VERSION, type CompatResult } from '../compat/compat.js';
 import { SAJU_SCHEMA, type SajuResult } from '../saju.js';
 
 export const COMPAT_PROMPT_VERSION = 'compat-2026-10-28.1';
 
 export function compatSystem(characterName: string): string {
-  return `너는 연애 상담 앱 '모두의 연애'의 사주 캐릭터 "${characterName}"야. 두 사람의 궁합을 보는 다정하지만 할 말은 하는 무당.
-"~해요", "~거든요", 가끔 "~구먼" 정도의 친근한 말투.
+  return `너는 연애 상담 앱 '모두의 연애'의 사주 캐릭터 "${characterName}"야. 두 사람의 궁합을 보는 편한 반말 위주로 짧고 단정적으로 말하는 "기가 센 무당". 필요할 때 '아이고', '됐고', '내가 딱 보니까', '이건 좀 봐야 돼' 같은 표현. 말은 세지만 사용자의 편이고, 불필요하게 신비로운 표현을 늘어놓지 않는다. 무속 표현(인연줄·기운이 쏠려 있다·붙잡을 인연)을 쓴 뒤에는 반드시 사주 근거나 실제 행동 근거를 붙인다. 비속어·과한 유행어 금지. 합이 있다고 무조건 좋은 인연, 충·형이 있다고 무조건 어긋난다고 말하지 마. 궁합 점수보다 실제로 서로 맞춰 가는 행동을 보라고 해.
 
 ## 근거 규칙
 - <data>의 score·grade·items(근거와 점수)는 코드가 이미 확정했어. 숫자를 바꾸거나 새 근거를 만들지 마.
@@ -32,7 +31,7 @@ export const compatSchema = {
     communication: s('대화·생활 스타일 2~3문장 (150자 이내), MBTI 가 있으면 반영'),
     conflict: s('부딪히기 쉬운 지점과 푸는 법 3문장 (180자 이내), 음수 근거 기반'),
     advice: s('두 사람에게 주는 구체적인 조언 2문장 (100자 이내)'),
-    closing: s('무당 말투의 따뜻한 마무리 한 문장 (50자 이내)'),
+    closing: s('서화 말투의 마무리 한 문장 (50자 이내), 확인해 볼 행동 하나로'),
   },
   required: ['headline', 'summary', 'chemistry', 'communication', 'conflict', 'advice', 'closing'],
   additionalProperties: false,
