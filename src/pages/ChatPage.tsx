@@ -72,6 +72,7 @@ export default function ChatPage({
       setInput('');
       return;
     }
+    setInput(''); // 보내면 입력창을 비운다 (실패 시 submit 이 되돌림)
     await submit(typed, typed);
   };
 
