@@ -1,4 +1,4 @@
-import { PERSONAS, personaBlock, type Persona } from './personas.js';
+import { PERSONAS, genderOfHub, personaBlock, pick, type Persona } from './personas.js';
 
 /**
  * 허브 채팅 (아는 형/언니) — 안전 장치 + 프롬프트 + 소개 카드.
@@ -7,7 +7,7 @@ import { PERSONAS, personaBlock, type Persona } from './personas.js';
  *  1) 입력 규칙 검사(정규식)로 먼저 걸러 고정 응답 → LLM 호출 안 함
  *  2) LLM 이 스스로 분류한 category 가 위험이면 답을 고정 응답으로 교체
  */
-export const CHAT_PROMPT_VERSION = 'chat-2026-11-03.1';
+export const CHAT_PROMPT_VERSION = 'chat-2026-11-12.2';
 export type Hub = '형' | '언니';
 
 export const CARDS = ['none', 'kakao', 'compat', 'fortune', 'personality'] as const;
@@ -70,7 +70,7 @@ export function sanitizeMemo(v: unknown): ChatMemo {
   };
 }
 
-export const greetingOf = (hub: Hub) => PERSONAS[hub === '언니' ? 'hub-f' : 'hub-m'].greeting;
+export const greetingOf = (hub: Hub) => pick(PERSONAS[hub === '언니' ? 'hub-f' : 'hub-m'].greeting, genderOfHub(hub));
 
 /** 카드 소개는 코드가 최종 결정: 사용자 발화 2번 이상 + 이미 보여 준 카드는 다시 안 띄움 */
 export function gateCard(card: Card, userTurns: number, shown: Card[]): Card {
@@ -103,7 +103,12 @@ export function chatSystem(
       : persona.cardPolicy === 'passive'
         ? '- 네 전문 밖(카톡 패턴 분석, 궁합·운세, 성향 테스트)이 분명히 필요할 때만 card 로 소개하고, 그 외엔 none.'
         : '- 상황과 고민이 어느 정도 보이면 card 로 전문 캐릭터를 소개해. 맞는 게 없으면 none.';
-  return `${personaBlock(persona)}
+  const gender = genderOfHub(hub);
+  const scopeRule =
+    persona.scope === 'relationships'
+      ? '- 직장·가족·친구 같은 대인관계 고민도 연애 고민과 같은 방식으로 다뤄. 그 밖의 질문(코딩·숙제·뉴스 등)엔 한 문장으로 가볍게 받아 주고 관계 이야기로 부드럽게 돌아와.'
+      : '- 연애와 상관없는 질문(코딩·숙제·뉴스 등)엔 한 문장으로 가볍게 받아 주고, 연애 이야기로 부드럽게 돌아와.';
+  return `${personaBlock(persona, gender)}
 
 <memo>
 지금까지 사용자가 직접 말한 내용 (이게 대화의 기준이야)
@@ -112,12 +117,17 @@ ${JSON.stringify(memo)}
 ${userTurns < 2 ? '이번 답에서는 card 를 반드시 none 으로 해. 아직 상황을 듣는 단계야.\n' : ''}${shown.length ? `이미 소개한 카드: ${shown.join(', ')} (다시 소개하지 마)\n` : ''}${p ? `사용자 프로필(사용자가 사주·성향을 먼저 물을 때만 꺼내. 먼저 언급하지 마): ${p}\n` : ''}
 ## 일관성 규칙 (가장 중요)
 - 답은 사용자의 마지막 말에 대한 반응이어야 해. 먼저 focus 에 그 요지를 한 줄로 적고, reply 는 그 요지에서 벗어나지 마.
-- memo 와 대화에 없는 사실(상대 이름·나이·직업·성별·사건·기간)을 지어내거나 넘겨짚지 마. 모르면 물어봐.
+- memo 와 대화에 없는 사실(상대 이름·나이·직업·사건·기간)을 지어내거나 넘겨짚지 마. 모르면 물어봐. 상대의 성별은 사용자가 말한 대로 따르고, 말하지 않았으면 이성 연인으로 가정하되 사용자가 다르게 말하면 바로 맞춰.
+- 네 캐릭터 자신의 짧은 경험담("나도 비슷한 적 있었는데")은 설정 범위 안에서 한두 문장 써도 돼. 사용자와 상대에 대한 사실은 절대 지어내지 마.
 - 이미 사용자가 답한 걸 다시 묻지 마. 앞에서 한 말·조언과 모순되는 말을 하지 마.
 - 사용자가 화제를 바꾸면 따라가되, 앞의 고민과 연결되면 자연스럽게 이어 줘.
 - 새로운 화제(사주·운세·MBTI·다른 고민)를 네가 먼저 꺼내지 마. 사용자가 꺼냈을 때만 다뤄.
-- 연애와 상관없는 질문(코딩·숙제·뉴스 등)엔 한 문장으로 가볍게 받아 주고, 연애 이야기로 부드럽게 돌아와.
-- 질문은 한 번에 하나. 2~4문장, 250자 이내.
+${scopeRule}
+
+## 답변 형식
+- ${persona.format.rule}
+- 전체 ${persona.format.maxChars}자 이내. 말풍선을 나누고 싶으면 빈 줄 하나로 구분해(최대 5개). 목록 기호·번호·마크다운은 쓰지 마.
+- 캐릭터의 답변 순서를 따르되 매 답에 모든 단계를 넣으려 하지 마. 상황을 모르면 짧게 반응하고 물어보는 게 먼저야.
 
 ## memo 갱신
 - 이번 사용자 말까지 반영해 memo 를 다시 써. 사용자가 직접 말한 것만 적고 네 추측·조언은 적지 마.
@@ -133,9 +143,10 @@ ${cardRule}
 - 카드를 고르면 reply 마지막 한 문장으로 자연스럽게 연결해. 카드가 none 이면 카드 얘기를 하지 마.
 
 ## 안전
-- category 를 정직하게 분류해: 자살·자해 암시 crisis, 폭력·협박·스토킹 피해 violence_victim, 상대 감시·몰래 확인·조종 요청 harmful_request, 성적인 요청 sexual, 그 외 normal.
+- category 를 정직하게 분류해: 자살·자해 암시 crisis, 폭력·협박·스토킹 피해 violence_victim, 상대 몰래 위치·폰·계정을 확인하거나 미행·뒷조사를 하려는 요청 harmful_request, 성적인 요청 sexual, 그 외 normal. 질투 유발·밀당·떠보기처럼 감시가 아닌 연애 전략 질문은 normal 이야(아래 규칙대로 캐릭터 말투로 마음은 알아주고 권하지 않는 이유와 대안을 말해).
 - normal 이 아니면 reply 는 짧게 공감만 써(서버가 안전 안내로 바꿔 보여 줘).
-- 진단·치료 권유처럼 들리는 말, 상대 비하, 집착·조종·떠보기 조언은 하지 마.
+- 진단·치료 권유처럼 들리는 말, 상대 비하는 하지 마.
+- 상대를 속이거나 불안하게 만들어 조종하는 조언(거짓말, 질투 유발, 괴롭히려는 잠수·무시, 몰래 확인·감시, 시험하려고 떠보기)은 하지 마. 내가 먼저 하던 걸 줄이고 상대의 자발적인 반응을 지켜보는 것, 원하는 걸 직접 말하는 것은 괜찮아.
 - 마크다운 기호 쓰지 마.`;
 }
 
@@ -155,7 +166,7 @@ export const chatSchema = {
       required: ['situation', 'concern', 'partner', 'facts'],
       additionalProperties: false,
     },
-    reply: { type: 'string', description: '사용자에게 보낼 답 (2~4문장, 250자 이내), focus 에서 벗어나지 않게' },
+    reply: { type: 'string', description: '사용자에게 보낼 답. 시스템 프롬프트의 답변 형식(길이·말풍선 구분)을 따르고 focus 에서 벗어나지 않게' },
     card: { type: 'string', enum: [...CARDS], description: '지금 소개할 전문 캐릭터, 없으면 none' },
   },
   required: ['category', 'focus', 'memo', 'reply', 'card'],

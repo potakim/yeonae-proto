@@ -1,15 +1,15 @@
 // 화면설계서 v0.3 §10 캐릭터표 기준. 페르소나(프롬프트용)는 src/lib/ai/personas.ts.
 // 이미지: 노션 페르소나 자료(실사형, AI 생성) — 출시 전 초상권·실존 인물 유사성 검토 대상.
 import type { Screen } from '../App';
-import type { PersonaId } from '../lib/ai/personas';
+import { PERSONAS, genderOfHub, personaName, type PersonaId } from '../lib/ai/personas';
 
 export type Category = 'counsel' | 'kakao' | 'trait' | 'saju' | 'intro';
 
 export interface Character {
   id: string;
   name: string;
-  /** 성별 허브: 남성 사용자에겐 형, 여성 사용자에겐 언니만 보인다 */
-  onlyFor?: '형' | '언니';
+  /** 성별 허브: 남성 사용자는 기훈형, 여성 사용자는 고은언니가 기본(즐겨찾기 고정·목록 맨 위). 다른 쪽도 목록에는 보인다 */
+  hubFor?: '형' | '언니';
   category: Category;
   roleLine: string; // 홈 목록 한 줄 소개 (1인칭)
   tagline: string; // 프로필 태그
@@ -54,7 +54,7 @@ export const CHARACTERS: Character[] = [
   {
     id: 'hub-m',
     name: '기훈형',
-    onlyFor: '형',
+    hubFor: '형',
     category: 'counsel',
     roleLine: '무슨 일인지 일단 얘기해봐',
     tagline: '종합 연애 상담 · 갈등 조율 · 34세 ESFJ',
@@ -70,7 +70,7 @@ export const CHARACTERS: Character[] = [
   {
     id: 'hub-f',
     name: '고은언니',
-    onlyFor: '언니',
+    hubFor: '언니',
     category: 'counsel',
     roleLine: '무슨 일인지 일단 얘기해봐',
     tagline: '종합 연애 상담 · 현실적 전략 · 30세 ISFJ',
@@ -210,19 +210,19 @@ export const CHARACTERS: Character[] = [
   },
 ];
 
-/** 이 사용자(허브 성별)에게 보이는 캐릭터 */
+/** 이 사용자에게 보이는 캐릭터. 네 상담 캐릭터는 남녀 모두에게 보이고(노션: 아는형/오빠, 아는언니/누나), 성별 허브가 맨 위 */
 export function visibleFor(hub: '형' | '언니', introOn: boolean): Character[] {
-  return CHARACTERS.filter((c) => (!c.onlyFor || c.onlyFor === hub) && (!c.flag || (c.flag === 'intro_tab' && introOn)));
+  const list = CHARACTERS.filter((c) => !c.flag || (c.flag === 'intro_tab' && introOn));
+  return [...list.filter((c) => c.hubFor === hub), ...list.filter((c) => c.hubFor !== hub)];
 }
 
 export function hubOf(hub: '형' | '언니'): Character {
-  return CHARACTERS.find((c) => c.id === (hub === '언니' ? 'hub-f' : 'hub-m'))!;
+  return CHARACTERS.find((c) => c.hubFor === hub)!;
 }
 
-/** 지현누나는 사용자 성별이 여성이면 '지현언니' */
+/** 사용자 성별에 따른 호칭: 기훈형/기훈오빠, 고은언니/고은누나, 성현이형/성현오빠, 소은누나/소은언니, 지현누나/지현언니 */
 export function nameOf(c: Character, hub: '형' | '언니'): string {
-  if (c.id === 'jihyun' && hub === '언니') return '지현언니';
-  return c.name;
+  return c.persona ? personaName(PERSONAS[c.persona], genderOfHub(hub)) : c.name;
 }
 
 export function byId(id: string): Character | undefined {

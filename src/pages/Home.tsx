@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { HubCharacter } from '../App';
-import { SECTIONS, byId, visibleFor, type Character } from '../data/characters';
+import { SECTIONS, byId, nameOf, visibleFor, type Character } from '../data/characters';
 import { isOn } from '../lib/flags';
 import CharacterRow from '../components/CharacterRow';
 
@@ -100,7 +100,7 @@ export default function Home({ hub, setHub, favorites, onOpen }: Props) {
           <button className="reco-card" onClick={() => onOpen(byId('soeun')!)}>
             <span className="reco-label">지금 나에게 필요한 상담</span>
             <strong>연락이 뜸해졌다면</strong>
-            <span>소은누나에게 물어봐요</span>
+            <span>{nameOf(byId('soeun')!, hub)}에게 물어봐요</span>
           </button>
           <button className="reco-card violet" onClick={() => onOpen(byId('saju-master')!)}>
             <span className="reco-label">새로 열린 서비스</span>

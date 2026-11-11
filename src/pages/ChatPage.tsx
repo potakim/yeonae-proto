@@ -5,7 +5,7 @@ import { CARD_INFO, type Card, type ChatMemo } from '../lib/ai/chat';
 import { useSessionStore } from '../lib/sessions/context';
 import { titleFrom, type Session } from '../lib/sessions/store';
 import ChatSidebar from '../components/ChatSidebar';
-import { PERSONAS } from '../lib/ai/personas';
+import { PERSONAS, genderOfHub, pick } from '../lib/ai/personas';
 import { TarotCardView, TarotPick } from '../components/Tarot';
 import type { TarotDraw } from '../lib/tarot';
 import { nameOf, type Character } from '../data/characters';
@@ -41,7 +41,9 @@ export default function ChatPage({
 }) {
   const store = useSessionStore();
   const persona = PERSONAS[character.persona ?? (hub === '언니' ? 'hub-f' : 'hub-m')];
-  const greet = persona.greeting;
+  const gender = genderOfHub(hub);
+  const greet = pick(persona.greeting, gender);
+  const guidePrompts = pick(persona.prompts, gender);
   // 서버가 돌려준 대화 메모(사용자가 말한 사실). 다음 요청에 그대로 돌려보내 맥락을 유지한다.
   // 세션에서 복원하고, 바뀔 때마다 세션에 저장한다 (원문 보관은 store 가 상한 관리).
   const [memo, setMemo] = useState<ChatMemo>(session.memo);
@@ -51,7 +53,7 @@ export default function ChatPage({
   // 타로: 질문을 먼저 보여주고 카드 5장 중 하나를 고르게 한 뒤 전송
   const [pendingTarot, setPendingTarot] = useState<string | null>(null);
   // 입력창 가이드: 캐릭터별 예시를 돌아가며 보여준다 (피드백 11/11)
-  const placeholder = msgs.filter((m) => m.role === 'user').length === 0 ? `예) ${persona.prompts[0]}` : '고민을 적어 주세요';
+  const placeholder = msgs.filter((m) => m.role === 'user').length === 0 ? `예) ${guidePrompts[0]}` : '고민을 적어 주세요';
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -176,7 +178,7 @@ export default function ChatPage({
             <div className="sheet-handle" />
             <h3>{who}에게 이렇게 말해 보세요</h3>
             <p className="hint">탭하면 입력창에 들어가요. 상황·상대·내가 걸리는 점을 함께 적으면 더 정확해져요.</p>
-            {persona.prompts.map((t) => (
+            {guidePrompts.map((t) => (
               <button
                 key={t}
                 className="sheet-row"
@@ -225,13 +227,19 @@ export default function ChatPage({
   );
 }
 
+/** 답변의 빈 줄은 말풍선 구분 (캐릭터별 답변 형식: 고은언니 문단, 성현이형 짧은 말 여러 개) */
 function Bubble({ who, text, safety }: { who: string; text: string; safety?: boolean }) {
+  const parts = safety ? [text] : text.split(/\n\s*\n/).map((t) => t.trim()).filter(Boolean).slice(0, 6);
   return (
     <div className="chat-row">
       <div className="chat-who">
         {who} <span className="ai-badge">{safety ? '안내' : 'AI'}</span>
       </div>
-      <div className={`chat-bubble ${safety ? 'safety' : ''}`}>{text}</div>
+      {(parts.length ? parts : [text]).map((t, i) => (
+        <div key={i} className={`chat-bubble ${safety ? 'safety' : ''}${i > 0 ? ' cont' : ''}`}>
+          {t}
+        </div>
+      ))}
     </div>
   );
 }

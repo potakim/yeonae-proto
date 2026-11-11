@@ -37,7 +37,7 @@ function Shell() {
   const [profile, setProfile] = useState<Character | null>(null); // 서비스 프로필 모달
   const [current, setCurrent] = useState<Character | null>(null); // 지금 대화 중인 캐릭터
   const [hub, setHub] = useState<HubCharacter>('형');
-  const favorites = useFavorites();
+  const favorites = useFavorites(hubOf(hub).id);
   // 이 세션에서 입력한 내 정보 (궁합·대화에 재사용, 저장하지 않음)
   const [mySaju, setMySaju] = useState<SajuInput | null>(null);
   const [myType, setMyType] = useState<string | null>(null);

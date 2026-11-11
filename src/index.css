@@ -2209,3 +2209,9 @@ input[type='file'] {
   background: var(--soft-pink);
   color: var(--brand-pink);
 }
+
+/* ── 한 답변의 여러 말풍선 (캐릭터별 답변 형식) ── */
+.chat-bubble.cont {
+  margin-top: 6px;
+  border-radius: 16px;
+}
