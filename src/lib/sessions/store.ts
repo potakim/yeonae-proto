@@ -19,6 +19,7 @@ export interface StoredMsg {
   content: string;
   card?: string;
   safety?: boolean;
+  tarot?: { index: number; name: string; reversed: boolean };
 }
 
 export interface Session {

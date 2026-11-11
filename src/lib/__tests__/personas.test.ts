@@ -45,3 +45,12 @@ describe('페르소나 · 캐릭터 데이터', () => {
     expect(drawTarot(() => 0.99)).toEqual({ name: '세계', reversed: false });
   });
 });
+
+import { drawTarotCard, tarotImage } from '../tarot';
+describe('타로 카드 이미지 매핑', () => {
+  it('카드 이름 인덱스가 라이더-웨이트 번호와 맞는다', () => {
+    expect(drawTarotCard(() => 0)).toEqual({ index: 0, name: '바보', reversed: true });
+    expect(drawTarotCard(() => 0.99)).toEqual({ index: 21, name: '세계', reversed: false });
+    expect(tarotImage(7)).toBe('/tarot/major-07.webp');
+  });
+});

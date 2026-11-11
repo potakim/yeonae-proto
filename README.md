@@ -23,7 +23,7 @@ Node 18 이상.
 - **컬러**: 시안 A Pink Violet — 핑크 `--brand-pink` = CTA·관계, 바이올렛 `--brand-violet` = 사주·분석·유료·AI 배지. 기존 `--blue` 별칭은 핑크로 매핑돼 옛 화면도 같은 톤.
 - **소개 탭 플래그** `intro_tab`: 기본 OFF(3탭). 켜기 → `?intro=1`, 마이 탭 > 테스트 설정, 또는 `VITE_FLAG_INTRO_TAB=1`. OFF면 소개 섹션·캐릭터·탭이 어디에도 렌더되지 않는다.
 - **캐릭터 페르소나** (`src/lib/ai/personas.ts`, 원문 `docs/personas/`, 화면설계서 v0.3 §10): 기훈형(34 ESFJ, 남성 사용자 허브, 반말·반존대) · 고은언니(31 ISFJ, 여성 사용자 허브, 존댓말+반말 리액션) · 소은누나(25 ENTP) · 성현이형(27 INTP, 항상 반말) · 지현누나/언니(34 ENTJ, 소개·플래그) · 타로마스터(임시명) · **서화**(사주, 기가 센 무당·반말 — 운세·궁합 풀이 톤에 적용, 대화방 통합 시 Q&A 페르소나). 노션 설정(2026-11-11) 기준. `/api/chat` 에 `character` 를 보내면 그 페르소나의 조언 원칙·말투 예시·카드 정책이 시스템 프롬프트에 들어간다. 프롬프트 버전 = `CHAT_PROMPT_VERSION + PERSONA_VERSION`.
-- 타로는 코드가 22장 중 한 장을 뽑아 사용자 메시지에 `[카드: 이름 (정/역)]` 로 붙이고, LLM 은 그 카드만 해석한다.
+- 타로: 질문을 보내면 **뒷면 카드 5장(자체 SVG) 중 한 장을 고르고 뒤집는** 인터페이스. 어느 자리를 골라도 카드는 코드가 뽑아(`src/lib/tarot.ts`) 메시지에 `[카드: 이름 (정/역)]` 로 붙이고, LLM 은 그 카드만 해석한다. 카드 앞면은 라이더-웨이트 덱(1909, 퍼블릭 도메인) `public/tarot/` — 출처 `public/tarot/LICENSE.md`.
 - 서화(id `saju-master`) 한 캐릭터가 사주·연애운·궁합을 담당(프로필의 '궁합 보기'). 여사친·선생님·소개팅 코치는 페르소나·이미지 미정(placeholder).
 - 캐릭터 이미지 `public/characters/*.webp` 는 AI 생성 실사(노션 페르소나 자료) — **출시 전 초상권·실존 인물 유사성 검토 필요**.
 - **세션·저장된 분석** (`src/lib/sessions/`, 화면설계서 v0.3 §7): `SessionStore` 인터페이스 + `LocalSessionStore`(localStorage). 실서비스는 같은 인터페이스로 서버 구현(chat_sessions/saved_analyses/partners, 암호화·30일 파기)으로 교체.

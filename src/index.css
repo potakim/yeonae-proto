@@ -2096,3 +2096,116 @@ input[type='file'] {
   flex: 1;
   min-width: 0;
 }
+
+/* ── 타로: 카드 고르기 · 카드 표시 ── */
+.tarot-pick {
+  margin: 8px 0 12px;
+  text-align: center;
+}
+.tarot-pick-hint {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--brand-violet);
+  font-weight: 600;
+}
+.tarot-fan {
+  position: relative;
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  perspective: 900px;
+}
+.tarot-slot {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 96px;
+  height: 160px;
+  margin-left: -48px;
+  transform: translateX(calc(var(--i) * 46px)) rotate(calc(var(--i) * 7deg)) translateY(calc(var(--i) * var(--i) * 6px));
+  transform-origin: 50% 120%;
+  transition:
+    transform 0.35s ease,
+    opacity 0.35s ease;
+  padding: 0;
+  background: none;
+}
+.tarot-slot:not(:disabled):hover,
+.tarot-slot:not(:disabled):active {
+  transform: translateX(calc(var(--i) * 46px)) rotate(calc(var(--i) * 7deg)) translateY(calc(var(--i) * var(--i) * 6px - 14px));
+}
+.tarot-slot.dim {
+  opacity: 0.25;
+}
+.tarot-slot.flipped {
+  transform: translateX(0) rotate(0) translateY(-10px) scale(1.15);
+  z-index: 3;
+}
+.tarot-inner {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.tarot-slot.flipped .tarot-inner {
+  transform: rotateY(180deg);
+}
+.tarot-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(60, 20, 90, 0.25);
+  background: #fff;
+}
+.tarot-face svg,
+.tarot-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.tarot-face.front {
+  transform: rotateY(180deg);
+}
+.tarot-face img.reversed,
+.tarot-card img.reversed {
+  transform: rotate(180deg);
+}
+.tarot-card {
+  margin: 6px 0 0;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.tarot-card img {
+  width: 120px;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(60, 20, 90, 0.25);
+  display: block;
+}
+.tarot-card.sm img {
+  width: 72px;
+}
+.tarot-card figcaption {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 13px;
+}
+.tarot-card figcaption span {
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--soft-violet);
+  color: var(--brand-violet);
+}
+.tarot-card figcaption span.rev {
+  background: var(--soft-pink);
+  color: var(--brand-pink);
+}

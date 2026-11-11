@@ -5,7 +5,9 @@ import { CARD_INFO, type Card, type ChatMemo } from '../lib/ai/chat';
 import { useSessionStore } from '../lib/sessions/context';
 import { titleFrom, type Session } from '../lib/sessions/store';
 import ChatSidebar from '../components/ChatSidebar';
-import { PERSONAS, drawTarot } from '../lib/ai/personas';
+import { PERSONAS } from '../lib/ai/personas';
+import { TarotCardView, TarotPick } from '../components/Tarot';
+import type { TarotDraw } from '../lib/tarot';
 import { nameOf, type Character } from '../data/characters';
 import { Avatar } from '../components/CharacterRow';
 
@@ -14,7 +16,11 @@ interface Msg {
   content: string;
   card?: Card;
   safety?: boolean;
+  /** 타로: 이 질문에 뽑힌 카드 (content 에는 [카드: …] 태그로 들어가 서버로 감) */
+  tarot?: TarotDraw;
 }
+
+const TAROT_TAG = /\n?\[카드:.*?\]$/;
 
 const CARD_SCREEN: Record<Exclude<Card, 'none'>, Screen> = { kakao: 'kakao', compat: 'compat', fortune: 'saju', personality: 'personality' };
 
@@ -42,6 +48,8 @@ export default function ChatPage({
   const [msgs, setMsgs] = useState<Msg[]>(session.messages as Msg[]);
   const [sidebar, setSidebar] = useState(false);
   const [guide, setGuide] = useState(false);
+  // 타로: 질문을 먼저 보여주고 카드 5장 중 하나를 고르게 한 뒤 전송
+  const [pendingTarot, setPendingTarot] = useState<string | null>(null);
   // 입력창 가이드: 캐릭터별 예시를 돌아가며 보여준다 (피드백 11/11)
   const placeholder = msgs.filter((m) => m.role === 'user').length === 0 ? `예) ${persona.prompts[0]}` : '고민을 적어 주세요';
   const [input, setInput] = useState('');
@@ -56,12 +64,20 @@ export default function ChatPage({
   const send = async () => {
     const typed = input.trim();
     if (!typed || loading) return;
-    // 타로: 카드는 코드가 뽑아 사용자 메시지에 붙인다 (LLM 이 임의로 뽑지 못하게)
-    const text = persona.id === 'tarot' ? `${typed}\n[카드: ${(({ name, reversed }) => `${name} (${reversed ? '역방향' : '정방향'})`)(drawTarot())}]` : typed;
+    if (persona.id === 'tarot') {
+      // 카드 선택 단계로 — 카드는 코드가 뽑고, 선택 후 submit() 이 태그를 붙여 보낸다
+      setPendingTarot(typed);
+      setInput('');
+      return;
+    }
+    await submit(typed, typed);
+  };
+
+  const submit = async (typed: string, text: string, tarot?: TarotDraw) => {
     const userTurnsBefore = msgs.filter((m) => m.role === 'user').length;
-    const next: Msg[] = [...msgs, { role: 'user', content: text }];
+    const next: Msg[] = [...msgs, { role: 'user', content: text, ...(tarot ? { tarot } : {}) }];
     setMsgs(next);
-    setInput('');
+    setPendingTarot(null);
     setLoading(true);
     setError(null);
     try {
@@ -116,7 +132,8 @@ export default function ChatPage({
         {msgs.map((m, i) =>
           m.role === 'user' ? (
             <div key={i} className="chat-row me">
-              <div className="chat-bubble me">{m.content}</div>
+              <div className="chat-bubble me">{m.tarot ? m.content.replace(TAROT_TAG, '') : m.content}</div>
+              {m.tarot && <TarotCardView card={m.tarot} />}
             </div>
           ) : (
             <div key={i}>
@@ -133,6 +150,14 @@ export default function ChatPage({
               )}
             </div>
           ),
+        )}
+        {pendingTarot && (
+          <>
+            <div className="chat-row me">
+              <div className="chat-bubble me">{pendingTarot}</div>
+            </div>
+            <TarotPick onPick={(c) => void submit(pendingTarot, `${pendingTarot}\n[카드: ${c.name} (${c.reversed ? '역방향' : '정방향'})]`, c)} />
+          </>
         )}
         {loading && <Bubble who={who} text="…" />}
         <div ref={endRef} />
@@ -180,7 +205,7 @@ export default function ChatPage({
             }
           }}
         />
-        <button className="btn-primary" disabled={!input.trim() || loading} onClick={send}>
+        <button className="btn-primary" disabled={!input.trim() || loading || !!pendingTarot} onClick={send}>
           보내기
         </button>
       </div>
