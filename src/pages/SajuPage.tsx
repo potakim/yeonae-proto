@@ -1,8 +1,14 @@
 import { useMemo, useState } from 'react';
 import FortunePanel from '../components/FortunePanel';
-import type { DayBoundary, FiveElement, Gender } from 'manseryeok';
+import type { FiveElement, Gender } from 'manseryeok';
 import {
   BIRTH_PLACES,
+  DEFAULT_JASI_RULE,
+  DEFAULT_TIME_STANDARD,
+  JASI_RULE_INFO,
+  TIME_STANDARD_INFO,
+  type JasiRule,
+  type TimeStandard,
   ELEMENTS,
   ELEMENT_HANJA,
   PILLAR_KEYS,
@@ -21,11 +27,8 @@ const ELEMENT_CLASS: Record<FiveElement, string> = {
   수: 'el-water',
 };
 
-const DAY_BOUNDARY_OPTIONS: { value: DayBoundary; label: string; desc: string }[] = [
-  { value: 'midnight', label: '자정 기준', desc: '00시에 날짜가 바뀌어요 (기본)' },
-  { value: 'jasi', label: '자시 기준', desc: '23시부터 다음날로 봐요' },
-  { value: 'splitJasi', label: '야자시', desc: '23시대는 일주 유지, 시주만 다음날' },
-];
+const TIME_STANDARD_OPTIONS = (['korea', 'trueSolar', 'none'] as const).map((value) => ({ value, ...TIME_STANDARD_INFO[value] }));
+const JASI_RULE_OPTIONS = (['jasi', 'splitJasi'] as const).map((value) => ({ value, ...JASI_RULE_INFO[value] }));
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5);
@@ -41,8 +44,8 @@ export default function SajuPage({ onSaved }: { onSaved?: (input: SajuInput) => 
   const [isLeapMonth, setIsLeapMonth] = useState(false);
   const [gender, setGender] = useState<Gender>('female');
   const [placeIdx, setPlaceIdx] = useState(0);
-  const [useTrueSolarTime, setUseTrueSolarTime] = useState(true);
-  const [dayBoundary, setDayBoundary] = useState<DayBoundary>('midnight');
+  const [timeStandard, setTimeStandard] = useState<TimeStandard>(DEFAULT_TIME_STANDARD);
+  const [dayBoundary, setDayBoundary] = useState<JasiRule>(DEFAULT_JASI_RULE);
 
   const [result, setResult] = useState<SajuResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +69,7 @@ export default function SajuPage({ onSaved }: { onSaved?: (input: SajuInput) => 
       isLeapMonth,
       gender,
       longitude: BIRTH_PLACES[placeIdx].longitude,
-      useTrueSolarTime,
+      timeStandard,
       dayBoundary,
     };
     try {
@@ -166,25 +169,37 @@ export default function SajuPage({ onSaved }: { onSaved?: (input: SajuInput) => 
               </option>
             ))}
           </select>
+          {timeStandard === 'trueSolar' && <p className="hint">진태양시는 이 경도로 계산해요.</p>}
         </div>
 
         <details className="advanced">
           <summary>고급 설정 (관법)</summary>
           <div className="field">
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={useTrueSolarTime}
-                onChange={(e) => setUseTrueSolarTime(e.target.checked)}
-              />
-              진태양시 보정 (경도 · 균시차 · 과거 서머타임)
-            </label>
-            <p className="hint">한국 표준시는 동경 135° 기준이라 서울 출생이면 실제 태양시가 약 30분 늦어요.</p>
+            <label>시주 시간 기준</label>
+            <div className="radio-list">
+              {TIME_STANDARD_OPTIONS.map((o) => (
+                <label key={o.value} className="radio">
+                  <input
+                    type="radio"
+                    name="timeStandard"
+                    checked={timeStandard === o.value}
+                    onChange={() => setTimeStandard(o.value)}
+                  />
+                  <span>
+                    <strong>{o.label}</strong> · {o.desc}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p className="hint">
+              한국 표준시는 동경 135° 기준이라 실제 태양보다 약 30분 빨라요. 서머타임(1948~51, 1955~60, 1987~88)과
+              1954~61년 표준시는 어떤 기준이든 자동으로 반영해요.
+            </p>
           </div>
           <div className="field">
-            <label>자시(23~01시) 날짜 경계</label>
+            <label>자시(밤 {timeStandard === 'none' ? '11시' : '11시 30분'} 이후) 출생</label>
             <div className="radio-list">
-              {DAY_BOUNDARY_OPTIONS.map((o) => (
+              {JASI_RULE_OPTIONS.map((o) => (
                 <label key={o.value} className="radio">
                   <input
                     type="radio"
@@ -239,6 +254,13 @@ function SajuResultView({ r }: { r: SajuResult }) {
             </>
           )}
         </div>
+        <div className="basis-chips" aria-label="적용 기준">
+          {payload.basis.map((b) => (
+            <span key={b} className="basis-chip">
+              {b}
+            </span>
+          ))}
+        </div>
 
         <div className="pillars">
           {PILLAR_KEYS.map((key) => {
@@ -283,7 +305,7 @@ function SajuResultView({ r }: { r: SajuResult }) {
         </p>
       </section>
 
-      {(r.warnings.length > 0 || r.correctionDiff.length > 0) && (
+      {r.warnings.length > 0 && (
         <section className="card warn">
           {r.warnings.map((w) => (
             <p key={w}>⚠️ {w}</p>
@@ -293,11 +315,32 @@ function SajuResultView({ r }: { r: SajuResult }) {
               · {PILLAR_LABEL[a.key]} 후보: {a.values.join(' / ')}
             </p>
           ))}
-          {r.correctionDiff.length > 0 && (
+        </section>
+      )}
+
+      {(r.zodiac.differs || r.standardDiff.length > 0 || r.jasiDiff) && (
+        <section className="card info">
+          {r.zodiac.differs && (
             <p>
-              ℹ️ 진태양시 보정 여부에 따라 결과가 달라지는 출생 시각이에요.{' '}
-              {r.correctionDiff.map((c) => `${PILLAR_LABEL[c.key]}: 보정 ${c.withCorrection} / 미보정 ${c.without}`).join(', ')}
+              ℹ️ 사주는 입춘을 기준으로 해가 바뀌어서 <strong>{r.zodiac.saju}띠</strong>로 봐요. 설날 기준으로는{' '}
+              {r.zodiac.seollal}띠예요.
             </p>
+          )}
+          {(r.standardDiff.length > 0 || r.jasiDiff) && (
+            <>
+              <p>ℹ️ 기준에 따라 결과가 달라지는 출생 시각이에요. 다른 앱과 다르게 보이면 아래 기준 차이 때문이에요.</p>
+              {r.standardDiff.map((s) => (
+                <p key={s.standard} className="info-row">
+                  · {TIME_STANDARD_INFO[s.standard].withParticle} 보면: {s.changes.map((c) => `${PILLAR_LABEL[c.key]} ${c.value}`).join(', ')}
+                </p>
+              ))}
+              {r.jasiDiff && (
+                <p className="info-row">
+                  · {JASI_RULE_INFO[r.jasiDiff.rule].ifApplied}:{' '}
+                  {r.jasiDiff.changes.map((c) => `${PILLAR_LABEL[c.key]} ${c.value}`).join(', ')}
+                </p>
+              )}
+            </>
           )}
         </section>
       )}
@@ -377,15 +420,19 @@ function SajuResultView({ r }: { r: SajuResult }) {
           </h3>
           <div className="luck-scroll">
             {payload.luckPillars!.list.map((p) => (
-              <div key={p.startDate} className={`luck-item ${p.current ? 'luck-current' : ''}`}>
+              <div key={p.startDate} className={`luck-item ${p.current ? 'luck-current' : ''}`} title={p.display}>
                 <div className="luck-age">{p.label}</div>
                 <div className="luck-ganji">{p.ganji}</div>
-                <div className="luck-age">{p.startDate.slice(0, 4)}~</div>
+                <div className="luck-age">{p.ageAtStart.replace(' 0개월', '')}</div>
+                <div className="luck-age">
+                  {p.startDate.slice(0, 4)}.{p.startDate.slice(5, 7)}~
+                </div>
               </div>
             ))}
           </div>
           <p className="hint">
-            첫 대운 시작 {payload.luckPillars!.firstStartDate} (출생 후 {d.luckPillars.startYears}년 {d.luckPillars.startMonths}개월{' '}
+            대운수({d.luckPillars.startAge})는 관례로 쓰는 숫자이고, 나이는 만 나이예요. 첫 대운은{' '}
+            {payload.luckPillars!.firstStartDate}부터(출생 후 {d.luckPillars.startYears}년 {d.luckPillars.startMonths}개월{' '}
             {d.luckPillars.startDays}일) · 올해 세운 {payload.now.annual.ganji} · 이번 달 {payload.now.monthly.ganji}
           </p>
         </section>

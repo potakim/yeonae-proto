@@ -93,11 +93,12 @@ npm run criteria:doc         # criteria.ts 를 바꾼 뒤 기준 문서 재생�
 src/
   lib/
     saju.ts                    만세력 계산 래퍼 (manseryeok@2.0.0 고정)
-                               - 시간 모름 처리, 절입일 후보 경고, 진태양시 보정 비교
-                               - 오행 분포, LLM 입력용 JSON(toLlmPayload, schema v2)
+                               - 시간 기준 3종(기본 한국 표준 보정)·자시 처리, 기준별 차이 안내, 띠(입춘/설날)
+                               - 시간 모름 처리, 절입일 후보 경고
+                               - 오행 분포, LLM 입력용 JSON(toLlmPayload, schema v3)
     saju-analysis.ts           결정적 파생 계산: 지장간, 12운성, 합충형파해·원진·자형·삼합/반합/방합,
                                신살(도화·역마·화개·홍염·천을귀인·양인·괴강·백호), 간이 신강약
-    vendor/korea-time.ts       진태양시 보정 시각 (manseryeok 내부 로직 이식, MIT) — 기록·표시용
+    vendor/korea-time.ts       보정 시각 계산 (manseryeok 내부 로직 이식, MIT) — 기록·표시용
     fortune/
       criteria.ts              해석 기준(의미·점수·행운 매핑) + 버전
       signals.ts               일진·주간·세운·대운·월운 신호와 점수
@@ -131,16 +132,35 @@ docs/
   계산 로직 오류 없음. 래퍼의 서머타임 처리 버그 1건을 찾아 수정함(회귀 테스트 포함).
   - 재실행: `pip install skyfield skyfield-data && python3 verify/ref_solar_terms.py && npm run verify`
 - 골든 케이스: 라이브러리 README 예시와 일치 확인 (양력·음력 입력, 진태양시 보정).
-- 관법 옵션: 진태양시(경도·균시차), 자시 날짜 경계 3종. 과거 표준시·서머타임은 진태양시 여부와 관계없이 항상 반영.
 - 시간 모름: 시주 제외 6글자로 계산하고, 절입일이라 연·월주가 하루 안에서 바뀌면 후보를 경고.
 
-## 원국 JSON v2 (`modu-yeonae.saju.v2`)
+### 한국 기준 기본값 (2026-11-11 확정)
+
+국내 주요 만세력(천을귀인·포스텔러·낭만만세력 등)과 같은 방식을 기본으로 한다.
+
+| 항목 | 기본값 | 선택 |
+|---|---|---|
+| 시주 시간 기준 `timeStandard` | `korea` 한국 표준 보정(동경 127.5°, 시계 −30분, 자시 23:30~01:29) | `trueSolar` 진태양시(출생지 경도+균시차), `none` 보정 없음(135°) |
+| 서머타임·옛 표준시 | 항상 반영 (1948~51·1955~60·1987~88 서머타임, 1908~11·1954~61 UTC+8:30) | — |
+| 자시 처리 `dayBoundary` | `jasi` 자시부터 다음날 (일주·시주 모두) | `splitJasi` 야자시 적용 (일주 당일, 시주 다음날) |
+| 연주(띠) | 입춘 기준 | — (설날 기준 띠와 다르면 안내) |
+| 대운 표기 | `N대운 · 만 X세 Y개월(YYYY년 M월)부터` | — |
+
+- 엔진의 `midnight`(23시대 시주 천간도 당일 기준)는 국내에서 쓰지 않는 방식이라 입력에서 받지 않는다.
+- 이전 형식 입력은 `normalizeBirthOptions()`로 변환한다: `useTrueSolarTime: true`→`trueSolar`, `false`→`none`, `midnight`→`jasi`.
+- 기준에 따라 결과가 달라지는 출생 시각이면 결과 화면에 다른 기준의 결과를 함께 보여 준다(`standardDiff`, `jasiDiff`).
+- 원국 계산 기준이 바뀌었으므로 운세·궁합 캐시 키에 `SAJU_SCHEMA`(v3)를 넣어 새로 만든다.
+
+## 원국 JSON v3 (`modu-yeonae.saju.v3`)
+
+v2 → v3: `input.timeStandard`(이전 `trueSolarTime` 대체), `basis`(적용 기준 라벨), `zodiac`(입춘/설날 띠),
+`luckPillars.list[].display`, `correctedTime`을 모든 시간 기준에서 제공.
 
 v1 대비 바뀐 점 — LLM이 지어내기 쉬운 값을 전부 코드에서 계산해 넘긴다.
 
 | 항목 | 내용 |
 |---|---|
-| `input`, `correctedTime` | 입력 시각 원본과 진태양시 보정 결과(경도·균시차·서머타임 내역) — 재현·디버깅용 |
+| `input`, `basis`, `correctedTime` | 입력 시각 원본, 적용 기준, 시주 판정에 쓴 보정 시각(경도·균시차·서머타임 내역) — 재현·디버깅용 |
 | `pillars.*.branch` | `yinYangPosition`(자리 음양)과 `mainQi`(정기)를 분리, 지장간 `hiddenStems`(십신 포함) |
 | `pillars.*.twelveStage` | 일간 기준 12운성 |
 | `relations` | 천간합·충, 육합·충·형·파·해·원진·자형·삼합·반합·방합·삼형 (같은 조합은 한 건으로 묶음, 인접 여부) |

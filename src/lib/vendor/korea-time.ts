@@ -60,7 +60,11 @@ export interface CorrectedTime {
   breakdown: { longitudeMinutes: number; equationOfTimeMinutes: number; standardOffsetMinutes: number; dstApplied: boolean };
 }
 
-/** 한국 벽시계 시각 → 출생지 지방 진태양시 */
+/**
+ * 한국 벽시계 시각 → 보정 시각.
+ * 기본은 출생지 지방 진태양시. applyEquationOfTime=false 면 균시차 없이 경도만 반영
+ * (longitude 127.5 = 한국 표준 보정, 135 = 서머타임·옛 표준시만 걷어낸 KST).
+ */
 export function toTrueSolarTime(
   year: number,
   month: number,
@@ -68,6 +72,7 @@ export function toTrueSolarTime(
   hour: number,
   minute: number,
   longitude: number,
+  applyEquationOfTime = true,
 ): CorrectedTime {
   const MIN = 60000;
   const dst = isKoreaDst(year, month, day, hour);
@@ -75,7 +80,7 @@ export function toTrueSolarTime(
   const civil = std + (dst ? 60 : 0);
   const wallMs = Date.UTC(year, month - 1, day, hour, minute);
   const instant = wallMs - civil * MIN;
-  const eot = equationOfTimeMinutes(instant);
+  const eot = applyEquationOfTime ? equationOfTimeMinutes(instant) : 0;
   const apparent = instant + (longitude * 4 + eot) * MIN;
   const a = new Date(apparent);
   return {

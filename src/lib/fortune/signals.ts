@@ -27,7 +27,7 @@ import {
   type Position,
   type TenGodGroup,
 } from '../saju-analysis.js';
-import { ELEMENTS, describeRelation, groupRelations, type Rel, type SajuResult } from '../saju.js';
+import { ELEMENTS, describeRelation, groupRelations, jasiStartMinutes, type Rel, type SajuResult, type TimeStandard } from '../saju.js';
 import {
   ELEMENT_EXCESS_SCORE,
   ELEMENT_FILL_SCORE,
@@ -66,20 +66,24 @@ export interface TodayContext {
 }
 
 /**
- * "오늘"의 일진 기준일. 자정 기준·야자시는 달력 날짜 그대로,
- * 자시 기준이면 23시부터 다음날 일진으로 본다.
+ * "오늘"의 일진 기준일. 야자시 적용(또는 엔진의 자정 기준)은 달력 날짜 그대로,
+ * '다음날로 보기'(jasi)면 자시가 시작되는 시각부터 다음날 일진으로 본다.
+ * 자시 시작은 시간 기준을 따른다: 한국 표준 보정·진태양시 23:30, 보정 없음 23:00.
  */
-export function resolveToday(now: Date, dayBoundary: DayBoundary): TodayContext {
+export function resolveToday(now: Date, dayBoundary: DayBoundary, timeStandard: TimeStandard = 'korea'): TodayContext {
   const k = new Date(now.getTime() + 9 * 3600000);
   const cal: Ymd = { year: k.getUTCFullYear(), month: k.getUTCMonth() + 1, day: k.getUTCDate() };
   const hour = k.getUTCHours();
-  const shift = dayBoundary === 'jasi' && hour >= 23;
+  const minuteOfDay = hour * 60 + k.getUTCMinutes();
+  const start = jasiStartMinutes(timeStandard);
+  const shift = dayBoundary === 'jasi' && minuteOfDay >= start;
+  const startText = start === 23 * 60 ? '밤 11시' : '밤 11시 30분';
   return {
     calendarDate: ymdStr(cal),
     effectiveDate: shift ? addDays(cal, 1) : cal,
     kstTime: `${String(hour).padStart(2, '0')}:${String(k.getUTCMinutes()).padStart(2, '0')}`,
     dayBoundary,
-    note: shift ? '자시 기준 관법이라 23시부터 다음날 일진으로 봤어요.' : null,
+    note: shift ? `자시가 시작되는 ${startText}부터는 다음날 일진으로 봤어요.` : null,
   };
 }
 

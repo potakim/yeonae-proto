@@ -14,7 +14,7 @@ import { handlePersonality } from '../../../api/personality';
 
 const birth = (y: number, m: number, d: number, h: number | null, gender: 'male' | 'female'): SajuInput => ({
   year: y, month: m, day: d, hour: h, minute: 0, isLunar: false, isLeapMonth: false,
-  gender, longitude: 126.978, useTrueSolarTime: true, dayBoundary: 'midnight',
+  gender, longitude: 126.978, timeStandard: 'trueSolar', dayBoundary: 'midnight',
 });
 
 /** 스키마의 필드 모양대로 가짜 JSON 을 만드는 대역 */

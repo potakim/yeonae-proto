@@ -1,6 +1,6 @@
 /** 궁합 해석 (무당) — 프롬프트·스키마·캐시 키. 점수·근거는 compat.ts 가 확정 */
 import { COMPAT_VERSION, type CompatResult } from '../compat/compat.js';
-import type { SajuResult } from '../saju.js';
+import { SAJU_SCHEMA, type SajuResult } from '../saju.js';
 
 export const COMPAT_PROMPT_VERSION = 'compat-2026-10-28.1';
 
@@ -45,5 +45,5 @@ export function compatUser(c: CompatResult): string {
 const natalKey = (r: SajuResult) => [r.detail.yearString, r.detail.monthString, r.detail.dayString, r.hourKnown ? r.detail.hourString : '-', r.input.gender].join('|');
 
 export function compatCacheSource(a: SajuResult, b: SajuResult, c: CompatResult, model: string, characterName: string) {
-  return ['compat', natalKey(a), natalKey(b), c.me.mbti ?? '-', c.partner.mbti ?? '-', c.me.label, c.partner.label, COMPAT_VERSION, COMPAT_PROMPT_VERSION, model, characterName].join('#');
+  return ['compat', natalKey(a), natalKey(b), c.me.mbti ?? '-', c.partner.mbti ?? '-', c.me.label, c.partner.label, COMPAT_VERSION, SAJU_SCHEMA, COMPAT_PROMPT_VERSION, model, characterName].join('#');
 }

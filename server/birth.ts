@@ -1,9 +1,6 @@
 /** 생년월일 입력 검증 (서버 공통) */
-import type { DayBoundary } from 'manseryeok';
-import { calculateSaju, type SajuInput, type SajuResult } from '../src/lib/saju.js';
+import { calculateSaju, normalizeBirthOptions, type SajuInput, type SajuResult } from '../src/lib/saju.js';
 import { BadRequest, int } from './llm.js';
-
-const BOUNDARIES: DayBoundary[] = ['midnight', 'jasi', 'splitJasi'];
 
 export function parseBirth(b: unknown, label = 'birth'): SajuInput {
   if (!b || typeof b !== 'object') throw new BadRequest(`${label} 가 필요해요.`);
@@ -25,8 +22,9 @@ export function parseBirth(b: unknown, label = 'birth'): SajuInput {
     isLeapMonth: o.isLeapMonth === true,
     gender,
     longitude,
-    useTrueSolarTime: o.useTrueSolarTime !== false,
-    dayBoundary: BOUNDARIES.includes(o.dayBoundary as DayBoundary) ? (o.dayBoundary as DayBoundary) : 'midnight',
+    // timeStandard(korea|trueSolar|none) 기본 korea. 이전 필드 useTrueSolarTime 도 받는다.
+    // 자시는 jasi|splitJasi 만, 그 외(이전 기본 midnight 포함)는 기본 jasi.
+    ...normalizeBirthOptions(o),
   };
 }
 

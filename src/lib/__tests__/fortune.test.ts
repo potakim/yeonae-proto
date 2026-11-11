@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 const user: SajuInput = {
   year: 1979, month: 1, day: 27, hour: 12, minute: 30,
   isLunar: false, isLeapMonth: false, gender: 'male',
-  longitude: 126.978, useTrueSolarTime: true, dayBoundary: 'midnight',
+  longitude: 126.978, timeStandard: 'trueSolar', dayBoundary: 'midnight',
 };
 const ctx = natalContext(calculateSaju(user));
 // 2026-10-28 16:00 KST
@@ -37,6 +37,15 @@ describe('오늘 일진 · 자시 관법', () => {
     const j = resolveToday(late, 'jasi');
     expect(j.effectiveDate.day).toBe(29);
     expect(j.note).toContain('자시');
+  });
+
+  it('다음날로 보기: 한국 표준 보정이면 23:30, 보정 없음이면 23:00 부터 다음날 일진', () => {
+    const t2320 = new Date('2026-10-28T14:20:00Z'); // 23:20 KST
+    const t2335 = new Date('2026-10-28T14:35:00Z'); // 23:35 KST
+    expect(resolveToday(t2320, 'jasi', 'korea').effectiveDate.day).toBe(28);
+    expect(resolveToday(t2335, 'jasi', 'korea').effectiveDate.day).toBe(29);
+    expect(resolveToday(t2320, 'jasi', 'none').effectiveDate.day).toBe(29);
+    expect(resolveToday(t2335, 'jasi', 'korea').note).toContain('밤 11시 30분');
   });
 
   it('UTC 기준으로는 전날이어도 KST 날짜를 쓴다', () => {

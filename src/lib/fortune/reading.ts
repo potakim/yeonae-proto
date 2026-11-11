@@ -5,7 +5,15 @@
  * Claude 호출 자체는 api/fortune.ts (서버)에서만 한다.
  */
 import type { DayBoundary, EarthlyBranch, FiveElement, HeavenlyStem } from 'manseryeok';
-import { calculateSaju, toLlmPayload, type SajuInput, type SajuPayload } from '../saju.js';
+import {
+  DEFAULT_JASI_RULE,
+  DEFAULT_TIME_STANDARD,
+  SAJU_SCHEMA,
+  calculateSaju,
+  toLlmPayload,
+  type SajuInput,
+  type SajuPayload,
+} from '../saju.js';
 import { CRITERIA_VERSION, ELEMENT_INFO, TEN_GOD_CRITERIA, RELATION_CRITERIA } from './criteria.js';
 import {
   dailySignal,
@@ -36,13 +44,13 @@ export const KIND_LABEL: Record<ReadingKind, string> = {
 
 export interface BuildOptions {
   now: Date;
-  /** 오늘 기준 관법 (기본: 입력의 자시 관법) */
+  /** 오늘 기준 관법 (기본: 입력의 자시 처리, 공용 운세는 기본값 '다음날로 보기') */
   dayBoundary?: DayBoundary;
 }
 
 export function buildPersonalBundle(input: SajuInput, kind: Exclude<ReadingKind, 'todayShared'>, opt: BuildOptions) {
   const r = calculateSaju(input);
-  const today = resolveToday(opt.now, opt.dayBoundary ?? input.dayBoundary);
+  const today = resolveToday(opt.now, opt.dayBoundary ?? input.dayBoundary, input.timeStandard);
   const payload = toLlmPayload(r, today.effectiveDate);
   const ctx = natalContext(r);
   const weak = payload.strength.verdict.includes('신약');
@@ -71,7 +79,7 @@ export function buildPersonalBundle(input: SajuInput, kind: Exclude<ReadingKind,
  * 일간 기준 십신 + 일진과 일지(배우자 자리)의 관계까지만 반영한다.
  */
 export function buildSharedBundle(day: { stem: HeavenlyStem; branch: EarthlyBranch }, gender: 'male' | 'female', opt: BuildOptions) {
-  const today = resolveToday(opt.now, opt.dayBoundary ?? 'midnight');
+  const today = resolveToday(opt.now, opt.dayBoundary ?? DEFAULT_JASI_RULE, DEFAULT_TIME_STANDARD);
   const ctx: NatalContext = {
     dayMaster: day.stem,
     gender,
@@ -292,7 +300,8 @@ export function cacheKeySource(bundle: Bundle, model: string, characterName: str
       : [bundle.natal.pillars.year?.ganji, bundle.natal.pillars.month?.ganji, bundle.natal.pillars.day?.ganji, bundle.natal.pillars.hour?.ganji ?? '-', bundle.natal.gender].join('|');
   // 원국 풀이는 나이·대운에 따라 문장이 달라질 수 있어 현재 대운까지 키에 포함
   const extra = bundle.kind === 'natal' ? bundle.natal.luck.find((l) => l.current)?.ganji ?? '' : '';
-  return [bundle.kind, natalKey, bundle.period, extra, PROMPT_VERSION, CRITERIA_VERSION, model, characterName].join('#');
+  // SAJU_SCHEMA: 원국 계산 기준(시간 기준·자시 처리 기본값)이 바뀌면 캐시도 새로 만든다
+  return [bundle.kind, natalKey, bundle.period, extra, SAJU_SCHEMA, PROMPT_VERSION, CRITERIA_VERSION, model, characterName].join('#');
 }
 
 export async function sha256Hex(text: string): Promise<string> {

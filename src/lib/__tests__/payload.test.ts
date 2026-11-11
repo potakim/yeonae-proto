@@ -8,7 +8,7 @@ import { toTrueSolarTime } from '../vendor/korea-time';
 const user: SajuInput = {
   year: 1979, month: 1, day: 27, hour: 12, minute: 30,
   isLunar: false, isLeapMonth: false, gender: 'male',
-  longitude: 126.978, useTrueSolarTime: true, dayBoundary: 'midnight',
+  longitude: 126.978, timeStandard: 'trueSolar', dayBoundary: 'midnight',
 };
 
 describe('v2 payload — 1979-01-27 갑오 일주', () => {

@@ -114,7 +114,13 @@ export function computeCompat(me: Person, partner: Person) {
   const bYb = b.year.earthlyBranch;
   for (const t of pairRel(aYb, bYb)) {
     const d = R.zodiac[t];
-    if (d !== undefined) add({ key: `zodiac.${t}`, title: `띠 ${aYb}${bYb} ${t}`, delta: d, detail: `띠끼리 ${t} — 가볍게 참고하는 전통 궁합`, category: '띠' });
+    // 사주 띠는 입춘 기준 → 설날 기준으로 알고 있는 띠와 다르면 함께 알려 준다
+    const zNote = [me, partner]
+      .filter((p) => p.saju.zodiac.differs)
+      .map((p) => `${josa(p.label, '은/는')} 입춘 기준 ${p.saju.zodiac.saju}띠(설날 기준 ${p.saju.zodiac.seollal}띠)`)
+      .join(', ');
+    if (d !== undefined)
+      add({ key: `zodiac.${t}`, title: `띠 ${aYb}${bYb} ${t}`, delta: d, detail: `띠끼리 ${t} — 가볍게 참고하는 전통 궁합${zNote ? ` · ${zNote}` : ''}`, category: '띠' });
   }
 
   // 5) 오행 보완
