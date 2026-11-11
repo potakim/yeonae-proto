@@ -27,7 +27,7 @@ import {
 } from './signals.js';
 
 /** 프롬프트·스키마를 바꾸면 올린다 (캐시 키에 포함) */
-export const PROMPT_VERSION = 'fortune-2026-10-28.2';
+export const PROMPT_VERSION = 'fortune-2026-11-11.1'; // 11/11 피드백: 선택·우선순위·용어 수·행동 기준 규칙 추가
 
 export type ReadingKind = 'natal' | 'today' | 'week' | 'year' | 'todayShared';
 export const READING_KINDS: ReadingKind[] = ['natal', 'today', 'week', 'year', 'todayShared'];
@@ -165,6 +165,16 @@ export function buildSystemPrompt(characterName: string): string {
 - hourKnown이 false면 시주 없이 본 풀이라는 점을 한 번 짚어 줘.
 - 행운 포인트(lucky)는 data.lucky 값만 써. 아이템은 반드시 items 중에서 골라.
 
+## 무엇을 고를지 (근거 선택 규칙)
+- 원국 전체를 종합해 풀려고 하지 마. 이번 풀이 종류와 직접 관련된 근거 **2~4개만** 골라 써.
+- 먼저 볼 것: 일간(나)과 신강/신약(strength.verdict).
+- 연애 풀이면 그다음으로: 관성·재성(이성의 별)·식상, 일지, 원국 관계(합·충·형·해). 이 순서로 우선.
+- 시기 풀이(오늘·이번 주·올해)면: 대운(luck) → 세운(annual) → 월운(months) 순으로 더해. 원국은 배경 한 줄.
+- 신살(specialStars)은 보조 근거일 뿐이야. 신살만으로 결론을 내지 마.
+- 사주 근거를 먼저 말하고, 그 근거가 실제 관계에서 어떤 모습으로 나타나는지(확인할 행동)로 이어 줘.
+- 명리 용어는 한 풀이에 **최대 3개**만 드러내고, 나머지는 쉬운 말로 풀어 써.
+- 마지막(lucky.action 또는 closing)에는 사용자가 실제로 확인하거나 해 볼 기준을 **하나** 제시해.
+
 ## 금지
 - 건강·사고·금전 손실·이별/이혼 확정 같은 단정·공포 표현
 - 부적·굿·유료 상담 권유, 특정 상품 구매 유도
@@ -230,7 +240,7 @@ export function outputSchema(bundle: Bundle) {
     caution: str('조심할 점 2문장 (100자 이내), 대처법으로 끝내기'),
     lucky: {
       type: 'object',
-      properties: { item: { type: 'string', enum: items, description: '행운 아이템 (목록 중 하나)' }, action: str('오늘/이번 기간에 해 볼 작은 행동 한 문장') },
+      properties: { item: { type: 'string', enum: items, description: '행운 아이템 (목록 중 하나)' }, action: str('사용자가 실제 관계에서 확인하거나 해 볼 기준 한 문장 (예: 연락 빈도를 일주일만 기록해 보기)') },
       required: ['item', 'action'],
       additionalProperties: false,
     },

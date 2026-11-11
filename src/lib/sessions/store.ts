@@ -217,9 +217,9 @@ const EMPTY: ChatMemo = { situation: '모름', concern: '', partner: '', facts: 
 /** 이전 상담에서 이어서: 부모 세션의 memo + "이전 상담 요약" 사실 한 줄 */
 export function memoForContinue(parent: Session): ChatMemo {
   const facts = [...parent.memo.facts];
-  const line = `이전 상담(${parent.title}): ${parent.memo.concern || '고민 이어서'}`.slice(0, 80);
+  const line = `이전 상담(${parent.title}): ${parent.memo.concern || '고민 이어서'}`.slice(0, 60);
   if (!facts.includes(line)) facts.push(line);
-  return { ...parent.memo, facts: facts.slice(-8) };
+  return { ...parent.memo, facts: facts.slice(-6) };
 }
 
 /** 이전 상대에 대한 새로운 고민: 상대 프로필 + 그 상대 관련 저장 분석 요약만 (다른 세션 원문·고민은 넣지 않음) */
@@ -227,7 +227,7 @@ export function memoForPartner(partner: Partner, analyses: SavedAnalysis[]): Cha
   const facts = analyses
     .filter((a) => a.partnerId === partner.id)
     .slice(0, 3)
-    .map((a) => `[${ANALYSIS_LABEL[a.type]}] ${a.summary}`.slice(0, 80));
+    .map((a) => `[${ANALYSIS_LABEL[a.type]}] ${a.summary}`.slice(0, 60));
   return { ...EMPTY, partner: [partner.alias, partner.note].filter(Boolean).join(' · ').slice(0, 120), facts };
 }
 
@@ -236,6 +236,6 @@ export function memoForNew(analyses: SavedAnalysis[]): ChatMemo {
   const facts = analyses
     .filter((a) => !a.partnerId && (a.type === 'trait' || a.type === 'saju'))
     .slice(0, 2)
-    .map((a) => `[내 ${ANALYSIS_LABEL[a.type]}] ${a.summary}`.slice(0, 80));
+    .map((a) => `[내 ${ANALYSIS_LABEL[a.type]}] ${a.summary}`.slice(0, 60));
   return { ...EMPTY, facts };
 }

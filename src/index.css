@@ -2052,3 +2052,47 @@ input[type='file'] {
 .chat-head .icon-btn {
   margin-left: auto;
 }
+
+/* ── 11/11 피드백: 털어놓기 가이드 ── */
+.guide-row {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0 8px;
+}
+.guide-row .btn-text {
+  color: var(--brand-violet);
+  font-size: 13px;
+}
+.chat-input textarea::placeholder {
+  color: #a8a8ae;
+}
+
+/* ── 카톡 텍스트 입력 ── */
+.parsed-box {
+  background: var(--bg);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+.parsed-box > p {
+  margin: 0 0 8px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chip-btn.on {
+  background: var(--brand-violet);
+  color: #fff;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.row input[type='date'] {
+  flex: 1;
+  min-width: 0;
+}

@@ -1,7 +1,14 @@
-import { useState } from 'react';
-import { AI_NOTICE, postApi } from '../lib/ai/client';
-import SaveAnalysisButton from '../components/SaveAnalysisButton';
-import type { ChatStats, Interest } from '../lib/kakao/stats';
+import { useState } from "react";
+import { AI_NOTICE, postApi } from "../lib/ai/client";
+import SaveAnalysisButton from "../components/SaveAnalysisButton";
+import {
+  filterByPeriod,
+  parseKakaoExport,
+  toChatMessages,
+  type ParsedChat,
+  type Period,
+} from "../lib/kakao/parse";
+import type { ChatStats, Interest } from "../lib/kakao/stats";
 
 const MAX_IMAGES = 6;
 const MAX_WIDTH = 1280;
@@ -28,32 +35,72 @@ interface ApiResult {
   interest: Interest;
   reading: Reading;
   safetyNotice: string | null;
-  meta: { model: string; extractedMessages: number; usage: { input: number; output: number }; privacy: string };
+  meta: {
+    model: string;
+    extractedMessages: number;
+    usage: { input: number; output: number };
+    privacy: string;
+  };
 }
 
 /** 브라우저에서 줄여서 JPEG base64 로 (원본은 서버에 보내지 않음) */
 async function shrink(file: File): Promise<Shot> {
   const bmp = await createImageBitmap(file);
   const scale = Math.min(1, MAX_WIDTH / bmp.width);
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = Math.round(bmp.width * scale);
   canvas.height = Math.round(bmp.height * scale);
-  canvas.getContext('2d')!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
   bmp.close();
-  const url = canvas.toDataURL('image/jpeg', 0.82);
-  return { name: file.name, data: url.split(',')[1], preview: url };
+  const url = canvas.toDataURL("image/jpeg", 0.82);
+  return { name: file.name, data: url.split(",")[1], preview: url };
 }
 
 export default function KakaoPage() {
   const [agreed, setAgreed] = useState(false);
   const [shots, setShots] = useState<Shot[]>([]);
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState("");
   const [result, setResult] = useState<ApiResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  // 11/11 피드백: 대화 내보내기 텍스트 (파일 또는 붙여넣기) → 코드 파싱 → "나" 선택 → 기간 필터
+  const [mode, setMode] = useState<"text" | "shot">("text");
+  const [rawText, setRawText] = useState("");
+  const [parsed, setParsed] = useState<ParsedChat | null>(null);
+  const [me, setMe] = useState("");
+  const [period, setPeriod] = useState<Period | "custom">("30d");
+  const [range, setRange] = useState({ from: "", to: "" });
 
   const total = shots.reduce((s, x) => s + x.data.length, 0);
+  const effPeriod: Period =
+    period === "custom" ? { from: range.from, to: range.to } : period;
+  const filtered = parsed ? filterByPeriod(parsed.messages, effPeriod) : [];
+  const filteredCount = filtered.filter((m) => !m.system).length;
+
+  const loadText = (text: string) => {
+    setError(null);
+    setRawText(text);
+    const p = parseKakaoExport(text);
+    setParsed(p);
+    // "나" 추정: 두 명이면 메시지가 적은 쪽을 상대로 두지 않고 사용자가 고르게. 기본은 두 번째 참여자
+    setMe(p.participants[1]?.name ?? p.participants[0]?.name ?? "");
+    if (p.participants.length === 0)
+      setError(
+        "카톡 대화 내보내기 형식이 아닌 것 같아요. 카톡 대화방 › 더보기 › 대화 내보내기(텍스트)로 받은 파일을 넣어 주세요.",
+      );
+    if (p.lastDate)
+      setRange({ from: p.firstDate ?? p.lastDate, to: p.lastDate });
+  };
+  const pickText = async (files: FileList | null) => {
+    const f = files?.[0];
+    if (!f) return;
+    try {
+      loadText(await f.text());
+    } catch {
+      setError("파일을 읽지 못했어요.");
+    }
+  };
 
   const pick = async (files: FileList | null) => {
     if (!files) return;
@@ -63,7 +110,7 @@ export default function KakaoPage() {
       const next = await Promise.all(list.map(shrink));
       setShots((s) => [...s, ...next]);
     } catch {
-      setError('이미지를 읽지 못했어요. 스크린샷 파일인지 확인해 주세요.');
+      setError("이미지를 읽지 못했어요. 스크린샷 파일인지 확인해 주세요.");
     }
   };
 
@@ -72,12 +119,29 @@ export default function KakaoPage() {
     setError(null);
     setResult(null);
     try {
-      const r = await postApi<ApiResult>('/api/kakao', {
-        images: shots.map((s) => ({ data: s.data, mediaType: 'image/jpeg' })),
-        note: note || undefined,
-      });
+      const body =
+        mode === "text" && parsed
+          ? {
+              messages: toChatMessages(filtered, me).slice(-800),
+              partnerName: parsed.participants.find((p) => p.name !== me)?.name,
+              note: note || undefined,
+            }
+          : {
+              images: shots.map((s) => ({
+                data: s.data,
+                mediaType: "image/jpeg",
+              })),
+              note: note || undefined,
+            };
+      const r = await postApi<ApiResult>("/api/kakao", body);
       setResult(r);
-      setTimeout(() => document.getElementById('kakao-result')?.scrollIntoView({ behavior: 'smooth' }), 50);
+      setTimeout(
+        () =>
+          document
+            .getElementById("kakao-result")
+            ?.scrollIntoView({ behavior: "smooth" }),
+        50,
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -100,63 +164,251 @@ export default function KakaoPage() {
       <h2 className="page-title">카톡 분석</h2>
       <section className="card bubble">
         <div className="bubble-who">💬 여사친</div>
-        <p>카톡 캡처 보여줘요. 연애 프로 정주행으로 단련된 눈으로 분위기 읽어 줄게요. 순서대로 올리면 더 정확해요.</p>
+        <p>
+          카톡 대화 보여줘요. 연애 프로 정주행으로 단련된 눈으로 분위기 읽어
+          줄게요. 대화 내보내기(텍스트)로 주면 기간을 골라서 더 정확하게 볼 수
+          있어요.
+        </p>
       </section>
 
       <section className="card">
         <h3 className="card-title">올리기 전에 확인해 주세요</h3>
         <ul className="notice-list">
-          <li>대화 상대의 정보가 포함될 수 있어요. 이름·전화번호·계좌는 가려서 분석해요.</li>
-          <li>스크린샷과 대화 원문은 분석에만 쓰고 저장하지 않아요. AI 학습에도 쓰지 않아요.</li>
-          <li>결과는 대화 일부로 AI가 추정한 거예요. 상대의 진짜 마음을 대신하진 않아요.</li>
+          <li>
+            대화 상대의 정보가 포함될 수 있어요. 이름·전화번호·계좌는 가려서
+            분석해요.
+          </li>
+          <li>
+            스크린샷과 대화 원문은 분석에만 쓰고 저장하지 않아요. AI 학습에도
+            쓰지 않아요.
+          </li>
+          <li>
+            결과는 대화 일부로 AI가 추정한 거예요. 상대의 진짜 마음을 대신하진
+            않아요.
+          </li>
         </ul>
         <label className="check">
-          <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+          />
           확인했어요
         </label>
       </section>
 
       {agreed && (
         <section className="card form">
-          <div className="field">
-            <label>
-              스크린샷 ({shots.length}/{MAX_IMAGES})
-            </label>
-            {shots.length < MAX_IMAGES && (
-              <input type="file" accept="image/*" multiple onChange={(e) => { void pick(e.target.files); e.target.value = ''; }} />
-            )}
-            {shots.length > 0 && (
-              <div className="thumbs">
-                {shots.map((s, i) => (
-                  <div key={i} className="thumb">
-                    <img src={s.preview} alt={`스크린샷 ${i + 1}`} />
-                    <button aria-label="빼기" onClick={() => setShots((x) => x.filter((_, j) => j !== i))}>×</button>
-                  </div>
-                ))}
-              </div>
-            )}
-            {total > MAX_TOTAL && <p className="error">용량이 커요. 장수를 줄여 주세요.</p>}
+          <div className="segmented" role="tablist" aria-label="입력 방식">
+            <button
+              role="tab"
+              aria-selected={mode === "text"}
+              className={mode === "text" ? "active" : ""}
+              onClick={() => setMode("text")}
+            >
+              대화 내보내기 (텍스트)
+            </button>
+            <button
+              role="tab"
+              aria-selected={mode === "shot"}
+              className={mode === "shot" ? "active" : ""}
+              onClick={() => setMode("shot")}
+            >
+              스크린샷
+            </button>
           </div>
+          {mode === "text" && (
+            <>
+              <p className="hint">
+                카톡 대화방 › 오른쪽 위 ≡ › 대화 내보내기 › 텍스트만. 파일을
+                올리거나 내용을 붙여 넣어요.
+              </p>
+              <div className="field">
+                <label>내보내기 파일 (.txt)</label>
+                <input
+                  type="file"
+                  accept=".txt,text/plain"
+                  onChange={(e) => {
+                    void pickText(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+              <div className="field">
+                <label>또는 붙여넣기</label>
+                <textarea
+                  className="question"
+                  rows={4}
+                  placeholder="2026년 11월 1일 오후 3:12, 지훈 : 뭐해?&#10;2026년 11월 1일 오후 3:15, 나 : 그냥 있어"
+                  value={rawText}
+                  onChange={(e) => loadText(e.target.value)}
+                />
+              </div>
+              {parsed && parsed.participants.length > 0 && (
+                <div className="parsed-box">
+                  <p>
+                    <strong>
+                      {parsed.messages.filter((m) => !m.system).length}개
+                    </strong>{" "}
+                    메시지 · {parsed.firstDate} ~ {parsed.lastDate} · 참여{" "}
+                    {parsed.participants.map((p) => p.name).join(", ")}
+                  </p>
+                  <div className="field">
+                    <label>나는 누구예요?</label>
+                    <div className="chips">
+                      {parsed.participants.map((p) => (
+                        <button
+                          key={p.name}
+                          className={`chip-btn${me === p.name ? " on" : ""}`}
+                          onClick={() => setMe(p.name)}
+                        >
+                          {p.name} ({p.count})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="field">
+                    <label>분석 기간</label>
+                    <div className="chips">
+                      {(
+                        [
+                          ["7d", "최근 7일"],
+                          ["30d", "최근 30일"],
+                          ["90d", "최근 90일"],
+                          ["all", "전체"],
+                          ["custom", "직접 선택"],
+                        ] as const
+                      ).map(([k, label]) => (
+                        <button
+                          key={k}
+                          className={`chip-btn${period === k ? " on" : ""}`}
+                          onClick={() => setPeriod(k)}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {period === "custom" && (
+                      <div className="row">
+                        <input
+                          type="date"
+                          value={range.from}
+                          min={parsed.firstDate ?? undefined}
+                          max={parsed.lastDate ?? undefined}
+                          onChange={(e) =>
+                            setRange((r) => ({ ...r, from: e.target.value }))
+                          }
+                        />
+                        <span>~</span>
+                        <input
+                          type="date"
+                          value={range.to}
+                          min={parsed.firstDate ?? undefined}
+                          max={parsed.lastDate ?? undefined}
+                          onChange={(e) =>
+                            setRange((r) => ({ ...r, to: e.target.value }))
+                          }
+                        />
+                      </div>
+                    )}
+                    <p className="hint">
+                      이 기간 메시지 {filteredCount}개
+                      {filteredCount > 800 ? " — 최근 800개만 분석해요" : ""}
+                      {parsed.participants.length > 2
+                        ? ' · 단체방은 "나"와 나머지 전체를 비교해요'
+                        : ""}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+          {mode === "shot" && (
+            <div className="field">
+              <label>
+                스크린샷 ({shots.length}/{MAX_IMAGES})
+              </label>
+              {shots.length < MAX_IMAGES && (
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => {
+                    void pick(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+              )}
+              {shots.length > 0 && (
+                <div className="thumbs">
+                  {shots.map((s, i) => (
+                    <div key={i} className="thumb">
+                      <img src={s.preview} alt={`스크린샷 ${i + 1}`} />
+                      <button
+                        aria-label="빼기"
+                        onClick={() =>
+                          setShots((x) => x.filter((_, j) => j !== i))
+                        }
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {total > MAX_TOTAL && (
+                <p className="error">용량이 커요. 장수를 줄여 주세요.</p>
+              )}
+            </div>
+          )}
           <div className="field">
             <label>상황 한 줄 (선택)</label>
-            <textarea className="question" rows={2} maxLength={300} placeholder="예: 소개팅 후 2주째 연락 중이에요. 애프터 신청해도 될까요?" value={note} onChange={(e) => setNote(e.target.value)} />
+            <textarea
+              className="question"
+              rows={2}
+              maxLength={300}
+              placeholder="예: 소개팅 후 2주째 연락 중이에요. 애프터 신청해도 될까요?"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
           </div>
           {error && <p className="error">{error}</p>}
-          <button className="btn-primary" disabled={!shots.length || loading || total > MAX_TOTAL} onClick={analyze}>
-            {loading ? '여사친이 읽는 중… (30~60초)' : '분석하기 (AI)'}
+          <button
+            className="btn-primary"
+            disabled={
+              loading ||
+              (mode === "shot"
+                ? !shots.length || total > MAX_TOTAL
+                : !parsed || !me || filteredCount < 3)
+            }
+            onClick={analyze}
+          >
+            {loading
+              ? mode === "text"
+                ? "여사친이 읽는 중… (10~20초)"
+                : "여사친이 읽는 중… (30~60초)"
+              : "분석하기 (AI)"}
           </button>
         </section>
       )}
 
       {result && (
         <div className="stack" id="kakao-result">
-          {result.safetyNotice && <section className="card warn"><p>⚠️ {result.safetyNotice}</p></section>}
+          {result.safetyNotice && (
+            <section className="card warn">
+              <p>⚠️ {result.safetyNotice}</p>
+            </section>
+          )}
           <section className="card result-hero">
             <div className="hint">상대의 호감도 (추정)</div>
-            <div className="compat-score">{result.interest.score}<span>점</span></div>
+            <div className="compat-score">
+              {result.interest.score}
+              <span>점</span>
+            </div>
             <div className="result-nick">{result.interest.label}</div>
             <p className="hint">
-              관계 단계: <strong>{result.reading.stage}</strong> · 신뢰도 {result.interest.confidence}
+              관계 단계: <strong>{result.reading.stage}</strong> · 신뢰도{" "}
+              {result.interest.confidence}
             </p>
           </section>
 
@@ -168,7 +420,11 @@ export default function KakaoPage() {
             </div>
             <div className="reading-block">
               <div className="reading-label">눈에 띈 신호</div>
-              <ul>{result.reading.signals.map((s) => <li key={s}>{s}</li>)}</ul>
+              <ul>
+                {result.reading.signals.map((s) => (
+                  <li key={s}>{s}</li>
+                ))}
+              </ul>
             </div>
             <div className="reading-block">
               <div className="reading-label">신경 쓰이는 점</div>
@@ -181,8 +437,13 @@ export default function KakaoPage() {
             <div className="reading-block">
               <div className="reading-label">답장 추천 (눌러서 복사)</div>
               {result.reading.replySuggestions.map((r) => (
-                <button key={r.tone} className="reply-chip" onClick={() => copy(r.text)}>
-                  <span className="muted">{r.tone}</span> {r.text} {copied === r.text && <span className="muted">· 복사됨</span>}
+                <button
+                  key={r.tone}
+                  className="reply-chip"
+                  onClick={() => copy(r.text)}
+                >
+                  <span className="muted">{r.tone}</span> {r.text}{" "}
+                  {copied === r.text && <span className="muted">· 복사됨</span>}
                 </button>
               ))}
             </div>
@@ -192,12 +453,19 @@ export default function KakaoPage() {
               sourceCharacter="yeosachin"
               title="카톡 분석"
               summary={`호감도 ${result.interest.score}점, 관계 단계 ${result.reading.stage}. ${result.reading.interestComment}`}
-              data={{ score: result.interest.score, stage: result.reading.stage, signals: result.reading.signals }}
+              data={{
+                score: result.interest.score,
+                stage: result.reading.stage,
+                signals: result.reading.signals,
+              }}
             />
             <p className="ai-label">
               AI가 대화 일부를 바탕으로 추정한 결과예요. {AI_NOTICE}
               <br />
-              {result.meta.privacy} · 읽은 메시지 {result.meta.extractedMessages}개 · {result.meta.model} · 토큰 {result.meta.usage.input.toLocaleString()}/{result.meta.usage.output.toLocaleString()}
+              {result.meta.privacy} · 읽은 메시지{" "}
+              {result.meta.extractedMessages}개 · {result.meta.model} · 토큰{" "}
+              {result.meta.usage.input.toLocaleString()}/
+              {result.meta.usage.output.toLocaleString()}
             </p>
           </article>
 
@@ -205,26 +473,65 @@ export default function KakaoPage() {
             <h3 className="card-title">숫자로 보면</h3>
             <table className="stat-table">
               <thead>
-                <tr><th></th><th>나</th><th>상대</th></tr>
+                <tr>
+                  <th></th>
+                  <th>나</th>
+                  <th>상대</th>
+                </tr>
               </thead>
               <tbody>
-                <tr><td>메시지</td><td>{result.stats.me.messages}</td><td>{result.stats.them.messages}</td></tr>
-                <tr><td>평균 길이</td><td>{result.stats.me.avgLength}자</td><td>{result.stats.them.avgLength}자</td></tr>
-                <tr><td>먼저 말 걸기</td><td>{result.stats.me.initiations}</td><td>{result.stats.them.initiations}</td></tr>
-                <tr><td>답장 (중간값)</td><td>{fmtMin(result.stats.me.medianReplyMin)}</td><td>{fmtMin(result.stats.them.medianReplyMin)}</td></tr>
-                <tr><td>질문</td><td>{result.stats.me.questions}</td><td>{result.stats.them.questions}</td></tr>
-                <tr><td>애정 표현</td><td>{result.stats.me.affection}</td><td>{result.stats.them.affection}</td></tr>
-                <tr><td>ㅋㅋ·이모티콘</td><td>{result.stats.me.laughs + result.stats.me.emoticons}</td><td>{result.stats.them.laughs + result.stats.them.emoticons}</td></tr>
+                <tr>
+                  <td>메시지</td>
+                  <td>{result.stats.me.messages}</td>
+                  <td>{result.stats.them.messages}</td>
+                </tr>
+                <tr>
+                  <td>평균 길이</td>
+                  <td>{result.stats.me.avgLength}자</td>
+                  <td>{result.stats.them.avgLength}자</td>
+                </tr>
+                <tr>
+                  <td>먼저 말 걸기</td>
+                  <td>{result.stats.me.initiations}</td>
+                  <td>{result.stats.them.initiations}</td>
+                </tr>
+                <tr>
+                  <td>답장 (중간값)</td>
+                  <td>{fmtMin(result.stats.me.medianReplyMin)}</td>
+                  <td>{fmtMin(result.stats.them.medianReplyMin)}</td>
+                </tr>
+                <tr>
+                  <td>질문</td>
+                  <td>{result.stats.me.questions}</td>
+                  <td>{result.stats.them.questions}</td>
+                </tr>
+                <tr>
+                  <td>애정 표현</td>
+                  <td>{result.stats.me.affection}</td>
+                  <td>{result.stats.them.affection}</td>
+                </tr>
+                <tr>
+                  <td>ㅋㅋ·이모티콘</td>
+                  <td>{result.stats.me.laughs + result.stats.me.emoticons}</td>
+                  <td>
+                    {result.stats.them.laughs + result.stats.them.emoticons}
+                  </td>
+                </tr>
               </tbody>
             </table>
             <h4>호감도 근거</h4>
             <ul className="reasons">
               {result.interest.factors.map((f) => (
-                <li key={f.key} className={f.delta > 0 ? 'plus' : 'minus'}>
-                  <span className="delta">{f.delta > 0 ? `+${f.delta}` : f.delta}</span> {f.text}
+                <li key={f.key} className={f.delta > 0 ? "plus" : "minus"}>
+                  <span className="delta">
+                    {f.delta > 0 ? `+${f.delta}` : f.delta}
+                  </span>{" "}
+                  {f.text}
                 </li>
               ))}
-              {result.interest.factors.length === 0 && <li className="muted">두드러진 신호가 없어요</li>}
+              {result.interest.factors.length === 0 && (
+                <li className="muted">두드러진 신호가 없어요</li>
+              )}
             </ul>
             <p className="hint">{result.interest.note}</p>
           </section>
@@ -234,4 +541,9 @@ export default function KakaoPage() {
   );
 }
 
-const fmtMin = (m: number | null) => (m === null ? '-' : m < 60 ? `${m}분` : `${Math.round((m / 60) * 10) / 10}시간`);
+const fmtMin = (m: number | null) =>
+  m === null
+    ? "-"
+    : m < 60
+      ? `${m}분`
+      : `${Math.round((m / 60) * 10) / 10}시간`;

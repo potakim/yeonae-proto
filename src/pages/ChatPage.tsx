@@ -41,6 +41,9 @@ export default function ChatPage({
   const [memo, setMemo] = useState<ChatMemo>(session.memo);
   const [msgs, setMsgs] = useState<Msg[]>(session.messages as Msg[]);
   const [sidebar, setSidebar] = useState(false);
+  const [guide, setGuide] = useState(false);
+  // 입력창 가이드: 캐릭터별 예시를 돌아가며 보여준다 (피드백 11/11)
+  const placeholder = msgs.filter((m) => m.role === 'user').length === 0 ? `예) ${persona.prompts[0]}` : '고민을 적어 주세요';
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -135,11 +138,39 @@ export default function ChatPage({
         <div ref={endRef} />
       </div>
       {error && <p className="error">{error}</p>}
+      {msgs.filter((m) => m.role === 'user').length === 0 && (
+        <div className="guide-row">
+          <button className="btn-text" onClick={() => setGuide(true)}>
+            ⓘ 어떤 고민을 털어놓으면 좋을까?
+          </button>
+        </div>
+      )}
+      {guide && (
+        <div className="sheet-backdrop" onClick={() => setGuide(false)}>
+          <div className="sheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="고민 예시">
+            <div className="sheet-handle" />
+            <h3>{who}에게 이렇게 말해 보세요</h3>
+            <p className="hint">탭하면 입력창에 들어가요. 상황·상대·내가 걸리는 점을 함께 적으면 더 정확해져요.</p>
+            {persona.prompts.map((t) => (
+              <button
+                key={t}
+                className="sheet-row"
+                onClick={() => {
+                  setInput(t);
+                  setGuide(false);
+                }}
+              >
+                <strong>{t}</strong>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="chat-input">
         <textarea
           rows={1}
           maxLength={500}
-          placeholder="고민을 적어 주세요"
+          placeholder={placeholder}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {

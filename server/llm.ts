@@ -124,6 +124,11 @@ export async function callJson<T = unknown>(
   let result: CallResult;
   try {
     result = await call(args);
+    // 출력이 max_tokens 로 끊기면 예산을 늘려 1회 재시도 (JSON 이 잘리면 파싱도 실패하므로 사용자에게 에러 대신)
+    if (result.stop === 'max_tokens') {
+      console.warn(`[${tag}] max_tokens 도달 (${args.maxTokens ?? 3000}) → 재시도`);
+      result = await call({ ...args, maxTokens: Math.round((args.maxTokens ?? 3000) * 1.8) });
+    }
   } catch (e) {
     console.error(`[${tag}]`, e instanceof Error ? e.message : e);
     return json(502, { error: friendlyError(e, args.model) });

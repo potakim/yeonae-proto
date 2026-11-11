@@ -66,7 +66,7 @@ export function sanitizeMemo(v: unknown): ChatMemo {
     situation: SITUATIONS.includes(o.situation as ChatMemo['situation']) ? (o.situation as ChatMemo['situation']) : '모름',
     concern: clip(o.concern, 120),
     partner: clip(o.partner, 120),
-    facts: Array.isArray(o.facts) ? o.facts.map((f) => clip(f, 80)).filter(Boolean).slice(-8) : [],
+    facts: Array.isArray(o.facts) ? o.facts.map((f) => clip(f, 60)).filter(Boolean).slice(-6) : [],
   };
 }
 
@@ -121,7 +121,7 @@ ${userTurns < 2 ? '이번 답에서는 card 를 반드시 none 으로 해. 아�
 
 ## memo 갱신
 - 이번 사용자 말까지 반영해 memo 를 다시 써. 사용자가 직접 말한 것만 적고 네 추측·조언은 적지 마.
-- situation: 솔로/썸/연애중/이별/재회 고민/기타, 아직 모르면 모름. concern: 핵심 고민 한 줄. partner: 상대에 대해 들은 사실. facts: 그 밖에 사용자가 말한 중요한 사실(최대 8개, 오래된 것부터 빠짐).
+- situation: 솔로/썸/연애중/이별/재회 고민/기타, 아직 모르면 모름. concern: 핵심 고민 한 줄. partner: 상대에 대해 들은 사실. facts: 그 밖에 사용자가 말한 중요한 사실(각 60자 이내, 최대 6개, 오래된 것부터 빠짐).
 - 사용자가 정정하면 memo 도 정정해.
 
 ## 소개 카드

@@ -66,7 +66,7 @@ export async function handleChat(request: Request, deps: HandlerDeps = {}): Prom
 
   const r = await callJson<{ category: Category; focus: string; memo: ChatMemo; reply: string; card: Card }>(
     call,
-    { model, system: chatSystem(hub, safeProfile, memo, shown, userTurns, persona), history: msgs.slice(0, -1), user: last.content, schema: chatSchema, maxTokens: 900 },
+    { model, system: chatSystem(hub, safeProfile, memo, shown, userTurns, persona), history: msgs.slice(0, -1), user: last.content, schema: chatSchema, maxTokens: 2000 },
     'chat',
   );
   if (r instanceof Response) return r;

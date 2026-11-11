@@ -210,6 +210,26 @@ describe('API 핸들러 (Claude 대역)', () => {
     expect(j.meta.extractedMessages).toBe(4);
   });
 
+  it('카톡 텍스트(내보내기): 추출 호출 없이 해석 1회, 상대 이름 마스킹', async () => {
+    const c = makeCaller();
+    const messages = [
+      { speaker: 'system', text: '11월 1일', time: null },
+      { speaker: 'them', text: '민수야 뭐해? 010-1111-2222 로 전화해', time: '15:12' },
+      { speaker: 'me', text: '그냥 있어', time: '15:15' },
+      { speaker: 'them', text: '밥 먹자', time: '15:20' },
+      { speaker: 'me', text: '좋아', time: '15:21' },
+    ];
+    const res = await handleKakao(req({ messages, partnerName: '민수' }), { env: {}, callModel: c.fn });
+    const j = await res.json();
+    expect(res.status).toBe(200);
+    expect(c.calls).toHaveLength(1); // 해석만
+    expect(c.calls[0].user as string).not.toMatch(/민수|010-1111/);
+    expect(j.meta.source).toBe('text');
+    expect(j.stats.them.messages).toBe(2);
+    const short = await handleKakao(req({ messages: messages.slice(0, 2) }), { env: {}, callModel: c.fn });
+    expect(short.status).toBe(422);
+  });
+
   it('카톡: 읽을 수 없는 이미지면 422', async () => {
     const c = makeCaller([{ readable: false, reason: '카톡 화면이 아니에요', partnerName: null, messages: [] }]);
     const res = await handleKakao(req({ images: [{ data: 'AAAA' }] }), { env: {}, callModel: c.fn });
