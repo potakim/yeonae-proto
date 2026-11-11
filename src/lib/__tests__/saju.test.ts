@@ -52,6 +52,21 @@ describe('만세력 골든 케이스', () => {
     expect(r.detail.dayString).toBe(calculateSaju({ ...base, year: 1995, month: 3, day: 15, hour: 12, minute: 0 }).detail.dayString);
   });
 
+  it('진태양시를 꺼도 서머타임은 반영: 1988-07-15 09:40(서머타임) = 실제 KST 08:40 → 진시', () => {
+    const r = calculateSaju({ ...base, year: 1988, month: 7, day: 15, hour: 9, minute: 40, useTrueSolarTime: false });
+    expect(r.detail.hour.earthlyBranch).toBe('진');
+  });
+
+  it('진태양시를 꺼도 1954~61년 UTC+8:30 표준시는 반영: 1958-01-10 06:50 = KST 07:20 → 진시', () => {
+    const r = calculateSaju({ ...base, year: 1958, month: 1, day: 10, hour: 6, minute: 50, useTrueSolarTime: false });
+    expect(r.detail.hour.earthlyBranch).toBe('진');
+  });
+
+  it('진태양시를 끈 계산은 평상시(1990년대) 입력을 KST 그대로 사용', () => {
+    const r = calculateSaju({ ...base, useTrueSolarTime: false });
+    expect(r.detail.toObject()).toEqual({ year: '임신', month: '경술', day: '계유', hour: '을묘' });
+  });
+
   it('존재하지 않는 음력 날짜는 오류', () => {
     expect(() => calculateSaju({ ...base, year: 2023, month: 2, day: 30, isLunar: true, isLeapMonth: true })).toThrow();
   });

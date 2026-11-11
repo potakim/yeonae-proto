@@ -8,7 +8,8 @@
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm test         # 단위 테스트 (만세력 골든 케이스 + 교차검증, 채점 로직)
+npm test         # 단위 테스트 (만세력 골든 케이스·회귀, 채점 로직)
+npm run verify   # 만세력 독립 검증 (verify/REPORT.md)
 npm run build    # dist/ 생성
 ```
 
@@ -123,17 +124,15 @@ docs/
 
 ## 만세력 — 정확성 검증 내용
 
-- 엔진: [manseryeok](https://github.com/yhj1024/manseryeok) 2.0.0 (MIT, KASI 정본 기반). 버전은 정확히 고정.
+- 엔진: [manseryeok](https://github.com/yhj1024/manseryeok) 2.0.0 (MIT). 버전은 정확히 고정.
+  음력표는 1391~2049년 KASI 기준, 절입표는 천문계산값(분 단위).
+- **독립 검증 완료 → [verify/REPORT.md](verify/REPORT.md)**
+  KASI 공식 절입값, NASA JPL DE421 천체력, KASI 기반 음양력 구현, IANA 표준시 이력 등과 항목별 전수 대조.
+  계산 로직 오류 없음. 래퍼의 서머타임 처리 버그 1건을 찾아 수정함(회귀 테스트 포함).
+  - 재실행: `pip install skyfield skyfield-data && python3 verify/ref_solar_terms.py && npm run verify`
 - 골든 케이스: 라이브러리 README 예시와 일치 확인 (양력·음력 입력, 진태양시 보정).
-- **교차검증**: 1900-01-01 ~ 2099-12-31 전 일자(73,049일)를 중국 기준 만세력 `lunar-javascript`와 비교
-  - 일주: 불일치 0건
-  - 연주·월주: 99건 불일치, 모두 절입일 근처 (한국 KST와 중국 CST 기준 차이에서 오는 정상적인 차이)
-  - 테스트에는 13일 간격 샘플로 상시 포함 (`npm test`)
-- 관법 옵션: 진태양시(경도·균시차·과거 서머타임), 자시 날짜 경계 3종.
+- 관법 옵션: 진태양시(경도·균시차), 자시 날짜 경계 3종. 과거 표준시·서머타임은 진태양시 여부와 관계없이 항상 반영.
 - 시간 모름: 시주 제외 6글자로 계산하고, 절입일이라 연·월주가 하루 안에서 바뀌면 후보를 경고.
-
-> 실서비스 전에는 KASI 데이터나 검증된 상용 만세력과 대조한 자체 골든셋(절입 경계, 23시대 출생,
-> 1948~1988년 서머타임 기간 출생 등)을 추가하는 것을 권장합니다.
 
 ## 원국 JSON v2 (`modu-yeonae.saju.v2`)
 

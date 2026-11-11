@@ -110,9 +110,13 @@ function toBirthInfo(input: SajuInput, hour: number, minute: number, trueSolar: 
     isLeapMonth: input.isLunar ? input.isLeapMonth : false,
     gender: input.gender,
     dayBoundary: input.dayBoundary,
+    // 주의: trueSolarTime 옵션을 아예 빼면 라이브러리가 과거 표준시(1954~61 UTC+8:30)·서머타임
+    // (1948~51, 1955~60, 1987~88)까지 무시하고 입력을 현재 KST 로 간주한다(verify/REPORT.md).
+    // 그래서 진태양시를 끈 경우에도 '동경 135°·균시차 없음·서머타임 적용'으로 넘겨
+    // 벽시계 → 실제 KST 환산은 항상 하고, 경도·균시차 보정만 끈다.
     trueSolarTime: trueSolar
       ? { longitude: input.longitude ?? undefined, applyEquationOfTime: true, applyHistoricalDst: true }
-      : undefined,
+      : { longitude: 135, applyEquationOfTime: false, applyHistoricalDst: true },
   };
 }
 

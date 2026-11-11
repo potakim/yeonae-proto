@@ -1,0 +1,720 @@
+{
+  "solarTerms": {
+    "range": "1900-2050",
+    "count": 3624,
+    "libMinusRefSec": {
+      "n": 3624,
+      "min": -31.657,
+      "p50": 9.249,
+      "p99": 61.242,
+      "max": 74.588
+    },
+    "absOver60s": 44,
+    "absOver120s": 0,
+    "worst": [
+      {
+        "year": 1900,
+        "term": "입춘",
+        "libKST": "1900-02-04 14:52:00",
+        "refKST": "1900-02-04 14:50:45",
+        "diffSec": 75
+      },
+      {
+        "year": 1902,
+        "term": "경칩",
+        "libKST": "1902-03-06 21:08:00",
+        "refKST": "1902-03-06 21:06:48",
+        "diffSec": 71
+      },
+      {
+        "year": 1900,
+        "term": "입추",
+        "libKST": "1900-08-08 09:51:00",
+        "refKST": "1900-08-08 09:49:50",
+        "diffSec": 70
+      },
+      {
+        "year": 1900,
+        "term": "동지",
+        "libKST": "1900-12-22 15:42:00",
+        "refKST": "1900-12-22 15:40:49",
+        "diffSec": 70
+      },
+      {
+        "year": 1902,
+        "term": "소만",
+        "libKST": "1902-05-22 09:54:00",
+        "refKST": "1902-05-22 09:52:49",
+        "diffSec": 70
+      },
+      {
+        "year": 1902,
+        "term": "동지",
+        "libKST": "1902-12-23 03:36:00",
+        "refKST": "1902-12-23 03:34:49",
+        "diffSec": 70
+      },
+      {
+        "year": 1903,
+        "term": "대한",
+        "libKST": "1903-01-21 14:14:00",
+        "refKST": "1903-01-21 14:12:50",
+        "diffSec": 70
+      },
+      {
+        "year": 1901,
+        "term": "춘분",
+        "libKST": "1901-03-21 16:24:00",
+        "refKST": "1901-03-21 16:22:50",
+        "diffSec": 69
+      },
+      {
+        "year": 1902,
+        "term": "소한",
+        "libKST": "1902-01-06 14:52:00",
+        "refKST": "1902-01-06 14:50:51",
+        "diffSec": 69
+      },
+      {
+        "year": 1902,
+        "term": "춘분",
+        "libKST": "1902-03-21 22:17:00",
+        "refKST": "1902-03-21 22:15:50",
+        "diffSec": 69
+      },
+      {
+        "year": 1901,
+        "term": "소서",
+        "libKST": "1901-07-08 06:08:00",
+        "refKST": "1901-07-08 06:06:51",
+        "diffSec": 68
+      },
+      {
+        "year": 1905,
+        "term": "춘분",
+        "libKST": "1905-03-21 15:58:00",
+        "refKST": "1905-03-21 15:56:52",
+        "diffSec": 68
+      },
+      {
+        "year": 1901,
+        "term": "동지",
+        "libKST": "1901-12-22 21:37:00",
+        "refKST": "1901-12-22 21:35:53",
+        "diffSec": 67
+      },
+      {
+        "year": 1904,
+        "term": "춘분",
+        "libKST": "1904-03-21 09:59:00",
+        "refKST": "1904-03-21 09:57:53",
+        "diffSec": 67
+      },
+      {
+        "year": 1900,
+        "term": "백로",
+        "libKST": "1900-09-08 12:17:00",
+        "refKST": "1900-09-08 12:15:53",
+        "diffSec": 66
+      }
+    ],
+    "astronomyEngineMinusDE421Sec": {
+      "n": 3624,
+      "min": -46.19,
+      "p50": 9.284,
+      "p99": 57.653,
+      "max": 80.701
+    }
+  },
+  "solarTermsKasi": {
+    "kasiOfficialCount": 52,
+    "libMatchesKasi": 50,
+    "de421RoundedMatchesKasi": 51,
+    "libVsKasiMismatches": [
+      {
+        "year": 2028,
+        "term": "곡우",
+        "isJeol": false,
+        "kasi": "04-19 22:09",
+        "lib": "04-19 22:10"
+      },
+      {
+        "year": 2026,
+        "term": "추분",
+        "isJeol": false,
+        "kasi": "09-23 09:06",
+        "lib": "09-23 09:05"
+      }
+    ],
+    "minuteLevelVsDE421Rounded": {
+      "jeol": {
+        "total": 1812,
+        "differ": 295
+      },
+      "junggi": {
+        "total": 1812,
+        "differ": 305
+      },
+      "jeolSamples": [
+        {
+          "year": 1900,
+          "term": "소한",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1900,
+          "term": "입춘",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1900,
+          "term": "경칩",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1900,
+          "term": "청명",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1900,
+          "term": "입하",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1900,
+          "term": "망종",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1900,
+          "term": "소서",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1900,
+          "term": "입추",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1900,
+          "term": "백로",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1900,
+          "term": "한로",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1900,
+          "term": "입동",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1900,
+          "term": "대설",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1901,
+          "term": "입춘",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1901,
+          "term": "경칩",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1901,
+          "term": "소서",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1901,
+          "term": "입추",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1901,
+          "term": "대설",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1902,
+          "term": "소한",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1902,
+          "term": "입춘",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1902,
+          "term": "경칩",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1902,
+          "term": "입하",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1902,
+          "term": "망종",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1902,
+          "term": "한로",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1902,
+          "term": "입동",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1902,
+          "term": "대설",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1903,
+          "term": "소한",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1903,
+          "term": "경칩",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1903,
+          "term": "청명",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1903,
+          "term": "망종",
+          "libMinusRefMin": 1
+        },
+        {
+          "year": 1903,
+          "term": "소서",
+          "libMinusRefMin": 1
+        }
+      ],
+      "jeolByDecade": {
+        "1900s": 83,
+        "1910s": 55,
+        "1920s": 34,
+        "1930s": 41,
+        "1940s": 27,
+        "1950s": 23,
+        "1960s": 15,
+        "1970s": 2,
+        "1980s": 2,
+        "1990s": 1,
+        "2000s": 1,
+        "2010s": 5,
+        "2020s": 2,
+        "2030s": 1,
+        "2040s": 3
+      }
+    }
+  },
+  "lunar": {
+    "days": 55122,
+    "mismatches": 60,
+    "mismatchesByYear": {
+      "2050": 60
+    },
+    "samples": [
+      {
+        "solar": "2050-2-21",
+        "lib": "2050-2-1",
+        "ref": "2050-1-30"
+      },
+      {
+        "lunar": "2050-1-30",
+        "expected": "2050-2-21",
+        "libError": "2050년 1월 일자(day)은 1~29 범위여야 합니다: 30"
+      },
+      {
+        "solar": "2050-2-22",
+        "lib": "2050-2-2",
+        "ref": "2050-2-1"
+      },
+      {
+        "lunar": "2050-2-1",
+        "libBack": "2050-2-21",
+        "expected": "2050-2-22"
+      },
+      {
+        "solar": "2050-2-23",
+        "lib": "2050-2-3",
+        "ref": "2050-2-2"
+      },
+      {
+        "lunar": "2050-2-2",
+        "libBack": "2050-2-22",
+        "expected": "2050-2-23"
+      },
+      {
+        "solar": "2050-2-24",
+        "lib": "2050-2-4",
+        "ref": "2050-2-3"
+      },
+      {
+        "lunar": "2050-2-3",
+        "libBack": "2050-2-23",
+        "expected": "2050-2-24"
+      },
+      {
+        "solar": "2050-2-25",
+        "lib": "2050-2-5",
+        "ref": "2050-2-4"
+      },
+      {
+        "lunar": "2050-2-4",
+        "libBack": "2050-2-24",
+        "expected": "2050-2-25"
+      },
+      {
+        "solar": "2050-2-26",
+        "lib": "2050-2-6",
+        "ref": "2050-2-5"
+      },
+      {
+        "lunar": "2050-2-5",
+        "libBack": "2050-2-25",
+        "expected": "2050-2-26"
+      }
+    ],
+    "differsFromChineseCalendar1900to2049": {
+      "days": 1948,
+      "years": 58
+    }
+  },
+  "dayPillar": {
+    "days": 182986,
+    "mismatches": 0,
+    "samples": [],
+    "anchorCheck": "무오"
+  },
+  "yearMonthPillar": {
+    "checks": 65947,
+    "mismatches": 20,
+    "byOffset": {
+      "매일 정오": {
+        "checks": 55081,
+        "mismatches": 0
+      },
+      "절입 5분 전": {
+        "checks": 1811,
+        "mismatches": 0
+      },
+      "절입 2분 전": {
+        "checks": 1811,
+        "mismatches": 0
+      },
+      "절입 1분 전": {
+        "checks": 1811,
+        "mismatches": 0
+      },
+      "절입 1분 후": {
+        "checks": 1811,
+        "mismatches": 20
+      },
+      "절입 2분 후": {
+        "checks": 1811,
+        "mismatches": 0
+      },
+      "절입 5분 후": {
+        "checks": 1811,
+        "mismatches": 0
+      }
+    },
+    "samples": [
+      {
+        "tag": "1900 입춘 +1분",
+        "kst": "1900-02-04 14:51:00",
+        "lib": "기해 정축",
+        "ref": "경자 무인"
+      },
+      {
+        "tag": "1900 청명 +1분",
+        "kst": "1900-04-05 14:52:00",
+        "lib": "경자 기묘",
+        "ref": "경자 경진"
+      },
+      {
+        "tag": "1900 입추 +1분",
+        "kst": "1900-08-08 09:50:00",
+        "lib": "경자 계미",
+        "ref": "경자 갑신"
+      },
+      {
+        "tag": "1900 백로 +1분",
+        "kst": "1900-09-08 12:16:00",
+        "lib": "경자 갑신",
+        "ref": "경자 을유"
+      },
+      {
+        "tag": "1900 입동 +1분",
+        "kst": "1900-11-08 05:39:00",
+        "lib": "경자 병술",
+        "ref": "경자 정해"
+      },
+      {
+        "tag": "1901 소서 +1분",
+        "kst": "1901-07-08 06:07:00",
+        "lib": "신축 갑오",
+        "ref": "신축 을미"
+      },
+      {
+        "tag": "1901 대설 +1분",
+        "kst": "1901-12-08 03:52:00",
+        "lib": "신축 기해",
+        "ref": "신축 경자"
+      },
+      {
+        "tag": "1902 경칩 +1분",
+        "kst": "1902-03-06 21:07:00",
+        "lib": "임인 임인",
+        "ref": "임인 계묘"
+      },
+      {
+        "tag": "1902 소한 +1분",
+        "kst": "1902-01-06 14:51:00",
+        "lib": "신축 경자",
+        "ref": "신축 신축"
+      },
+      {
+        "tag": "1903 소서 +1분",
+        "kst": "1903-07-08 17:36:00",
+        "lib": "계묘 무오",
+        "ref": "계묘 기미"
+      },
+      {
+        "tag": "1904 경칩 +1분",
+        "kst": "1904-03-06 08:51:00",
+        "lib": "갑진 병인",
+        "ref": "갑진 정묘"
+      },
+      {
+        "tag": "1904 입하 +1분",
+        "kst": "1904-05-06 08:18:00",
+        "lib": "갑진 무진",
+        "ref": "갑진 기사"
+      },
+      {
+        "tag": "1904 한로 +1분",
+        "kst": "1904-10-09 02:35:00",
+        "lib": "갑진 계유",
+        "ref": "갑진 갑술"
+      },
+      {
+        "tag": "1905 경칩 +1분",
+        "kst": "1905-03-06 14:45:00",
+        "lib": "을사 무인",
+        "ref": "을사 기묘"
+      },
+      {
+        "tag": "1905 망종 +1분",
+        "kst": "1905-06-06 18:53:00",
+        "lib": "을사 신사",
+        "ref": "을사 임오"
+      },
+      {
+        "tag": "1905 한로 +1분",
+        "kst": "1905-10-09 08:19:00",
+        "lib": "을사 을유",
+        "ref": "을사 병술"
+      },
+      {
+        "tag": "1906 입추 +1분",
+        "kst": "1906-08-08 20:51:00",
+        "lib": "병오 을미",
+        "ref": "병오 병신"
+      },
+      {
+        "tag": "1907 입하 +1분",
+        "kst": "1907-05-07 01:53:00",
+        "lib": "정미 갑진",
+        "ref": "정미 을사"
+      },
+      {
+        "tag": "1909 입춘 +1분",
+        "kst": "1909-02-04 19:32:00",
+        "lib": "무신 을축",
+        "ref": "기유 병인"
+      },
+      {
+        "tag": "1910 경칩 +1분",
+        "kst": "1910-03-06 19:56:00",
+        "lib": "경술 무인",
+        "ref": "경술 기묘"
+      }
+    ]
+  },
+  "hourPillar": {
+    "checks": 259200,
+    "mismatches": 0,
+    "samples": []
+  },
+  "timezone": {
+    "hours": 876576,
+    "mismatchHours": 72293,
+    "ranges": [
+      {
+        "startWall": "1900-1-1 8:27",
+        "endWall": "1908-3-31 23:27",
+        "lib": 540,
+        "iana": 507,
+        "hours": 72280
+      },
+      {
+        "startWall": "1948-9-12 23:00",
+        "endWall": "1948-9-12 23:00",
+        "lib": 600,
+        "iana": 540,
+        "hours": 1
+      },
+      {
+        "startWall": "1949-9-10 23:00",
+        "endWall": "1949-9-10 23:00",
+        "lib": 600,
+        "iana": 540,
+        "hours": 1
+      },
+      {
+        "startWall": "1950-9-9 23:00",
+        "endWall": "1950-9-9 23:00",
+        "lib": 600,
+        "iana": 540,
+        "hours": 1
+      },
+      {
+        "startWall": "1951-9-8 23:00",
+        "endWall": "1951-9-8 23:00",
+        "lib": 600,
+        "iana": 540,
+        "hours": 1
+      },
+      {
+        "startWall": "1954-3-20 23:30",
+        "endWall": "1954-3-20 23:30",
+        "lib": 540,
+        "iana": 510,
+        "hours": 1
+      },
+      {
+        "startWall": "1955-9-8 23:30",
+        "endWall": "1955-9-8 23:30",
+        "lib": 570,
+        "iana": 510,
+        "hours": 1
+      },
+      {
+        "startWall": "1956-9-29 23:30",
+        "endWall": "1956-9-29 23:30",
+        "lib": 570,
+        "iana": 510,
+        "hours": 1
+      },
+      {
+        "startWall": "1957-9-21 23:30",
+        "endWall": "1957-9-21 23:30",
+        "lib": 570,
+        "iana": 510,
+        "hours": 1
+      },
+      {
+        "startWall": "1958-9-20 23:30",
+        "endWall": "1958-9-20 23:30",
+        "lib": 570,
+        "iana": 510,
+        "hours": 1
+      },
+      {
+        "startWall": "1959-9-19 23:30",
+        "endWall": "1959-9-19 23:30",
+        "lib": 570,
+        "iana": 510,
+        "hours": 1
+      },
+      {
+        "startWall": "1960-9-17 23:30",
+        "endWall": "1960-9-17 23:30",
+        "lib": 570,
+        "iana": 510,
+        "hours": 1
+      },
+      {
+        "startWall": "1987-10-11 2:00",
+        "endWall": "1987-10-11 2:00",
+        "lib": 600,
+        "iana": 540,
+        "hours": 1
+      },
+      {
+        "startWall": "1988-10-9 2:00",
+        "endWall": "1988-10-9 2:00",
+        "lib": 600,
+        "iana": 540,
+        "hours": 1
+      }
+    ]
+  },
+  "equationOfTime": {
+    "libMinusRefSec": {
+      "n": 10506,
+      "min": -4.476070887430019,
+      "p50": -0.3177626488624341,
+      "p99": 2.977368529426201,
+      "max": 4.213123211092125
+    }
+  },
+  "tenGodsVoid": {
+    "checks": 280,
+    "tenGodMismatches": 0,
+    "voidMismatches": 0,
+    "samples": []
+  },
+  "luckPillars": {
+    "checks": 20000,
+    "mismatches": 2,
+    "samples": [
+      {
+        "kst": "1942-05-15 05:33:00",
+        "gender": "male",
+        "lib": {
+          "forward": true,
+          "startAge": 8
+        },
+        "ref": {
+          "forward": true,
+          "startAge": 7,
+          "days": 22.4995
+        }
+      },
+      {
+        "kst": "1900-07-13 21:50:00",
+        "gender": "male",
+        "lib": {
+          "forward": true,
+          "startAge": 9
+        },
+        "ref": {
+          "forward": true,
+          "startAge": 8,
+          "days": 25.4999
+        }
+      }
+    ]
+  }
+}
