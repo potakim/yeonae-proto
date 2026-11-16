@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PERSONAS, TAROT_CARDS, drawTarot, isPersonaId, personaBlock, personaName, pick } from '../ai/personas';
+import { PERSONAS, TAROT_CARDS, isPersonaId, personaBlock, personaName, pick } from '../ai/personas';
 import { CHARACTERS, visibleFor, nameOf, byId } from '../../data/characters';
 
 describe('페르소나 · 캐릭터 데이터', () => {
@@ -70,18 +70,16 @@ describe('페르소나 · 캐릭터 데이터', () => {
     expect(nameOf(byId('saju-master')!, '형')).toBe('서화');
   });
 
-  it('타로는 22장 중 코드가 뽑는다', () => {
+  it('타로 덱은 메이저 아르카나 22장 (추첨은 서버 — tarot.test.ts)', () => {
     expect(TAROT_CARDS).toHaveLength(22);
-    expect(drawTarot(() => 0)).toEqual({ name: '바보', reversed: true });
-    expect(drawTarot(() => 0.99)).toEqual({ name: '세계', reversed: false });
   });
 });
 
-import { drawTarotCard, tarotImage } from '../tarot';
+import { tarotImage } from '../tarot';
 describe('타로 카드 이미지 매핑', () => {
   it('카드 이름 인덱스가 라이더-웨이트 번호와 맞는다', () => {
-    expect(drawTarotCard(() => 0)).toEqual({ index: 0, name: '바보', reversed: true });
-    expect(drawTarotCard(() => 0.99)).toEqual({ index: 21, name: '세계', reversed: false });
+    expect(TAROT_CARDS[0]).toBe('바보');
+    expect(TAROT_CARDS[21]).toBe('세계');
     expect(tarotImage(7)).toBe('/tarot/major-07.webp');
   });
 });

@@ -308,9 +308,10 @@ describe('허브 채팅 일관성', () => {
     expect(c.calls[0].system).toContain('소은누나(박소은, 25세, ENTP)');
     expect(c.calls[0].system).toContain('사건 기반 조언');
     expect(c.calls[0].system).toContain('분명히 필요할 때만 card');
+    // 타로는 전용 경로(/api/tarot)만 — 공용 채팅으로는 받지 않는다
     const r2 = await handleChat(req({ hub: '형', character: 'tarot', messages: [{ role: 'user', content: '연락할까요?\n[카드: 별 (정방향)]' }] }), { env: {}, callModel: c.fn });
-    expect(c.calls[1].system).toContain('card 는 항상 none');
-    expect(((await r2.json()) as { meta: { character: string } }).meta.character).toBe('tarot');
+    expect(r2.status).toBe(400);
+    expect(c.calls).toHaveLength(1);
   });
 
   it('모르는 character 는 성별 허브로 떨어진다', async () => {

@@ -6,8 +6,9 @@ import { useSessionStore } from '../lib/sessions/context';
 import { titleFrom, type Session } from '../lib/sessions/store';
 import ChatSidebar from '../components/ChatSidebar';
 import { PERSONAS, genderOfHub, pick } from '../lib/ai/personas';
-import { TarotCardView, TarotPick } from '../components/Tarot';
+import { CrystalBall, TarotCardView, TarotPick } from '../components/Tarot';
 import type { TarotDraw } from '../lib/tarot';
+import { normalizeQuestion } from '../lib/tarot-normalize';
 import { nameOf, type Character } from '../data/characters';
 import { Avatar } from '../components/CharacterRow';
 
@@ -16,11 +17,17 @@ interface Msg {
   content: string;
   card?: Card;
   safety?: boolean;
-  /** 타로: 이 질문에 뽑힌 카드 (content 에는 [카드: …] 태그로 들어가 서버로 감) */
+  /** 타로: 이 질문에 서버가 뽑아 준 카드 (카드 그림·이름·방향은 이 값으로만 그린다) */
   tarot?: TarotDraw;
+  /** 타로: 질문이 아니거나 범위 밖이라 카드를 쓰지 않은 회차 */
+  voided?: boolean;
 }
 
-const TAROT_TAG = /\n?\[카드:.*?\]$/;
+type TarotStatus = 'reading' | 'need_question' | 'out_of_scope' | 'safety';
+type DrawRes = { status: 'draw'; token: string; question: string } | { status: 'need_question' | 'safety'; question: string; reply: string };
+type ReadRes = { status: TarotStatus; reply: string; card?: TarotDraw };
+/** 지난 회차 기록 — 서버가 다시 정규화하고, 카드는 "지난 카드" 한 줄로만 쓴다 */
+const tarotHistory = (list: Msg[]) => list.map(({ role, content, tarot }) => ({ role, content, ...(tarot ? { tarot: { index: tarot.index, reversed: tarot.reversed } } : {}) }));
 
 const CARD_SCREEN: Record<Exclude<Card, 'none'>, Screen> = { kakao: 'kakao', compat: 'compat', fortune: 'saju', personality: 'personality' };
 
@@ -50,8 +57,11 @@ export default function ChatPage({
   const [msgs, setMsgs] = useState<Msg[]>(session.messages as Msg[]);
   const [sidebar, setSidebar] = useState(false);
   const [guide, setGuide] = useState(false);
-  // 타로: 질문을 먼저 보여주고 카드 5장 중 하나를 고르게 한 뒤 전송
-  const [pendingTarot, setPendingTarot] = useState<string | null>(null);
+  // 타로: 서버가 질문을 정규화하고 카드를 뽑아 토큰으로 돌려준다 → 5장 중 하나를 고르면 공개 → 해석 요청
+  const [pendingTarot, setPendingTarot] = useState<{ token: string; question: string } | null>(null);
+  // 타로: 해석 요청이 실패했을 때 같은 카드로 다시 요청하기 위한 토큰
+  const [retryToken, setRetryToken] = useState<string | null>(null);
+  const isTarot = persona.id === 'tarot';
   // 입력창 가이드: 캐릭터별 예시를 돌아가며 보여준다 (피드백 11/11)
   const placeholder = msgs.filter((m) => m.role === 'user').length === 0 ? `예) ${guidePrompts[0]}` : '고민을 적어 주세요';
   const [input, setInput] = useState('');
@@ -61,26 +71,78 @@ export default function ChatPage({
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [msgs, loading]);
+  }, [msgs, loading, pendingTarot]);
 
   const send = async () => {
     const typed = input.trim();
     if (!typed || loading) return;
-    if (persona.id === 'tarot') {
-      // 카드 선택 단계로 — 카드는 코드가 뽑고, 선택 후 submit() 이 태그를 붙여 보낸다
-      setPendingTarot(typed);
-      setInput('');
-      return;
-    }
-    setInput(''); // 보내면 입력창을 비운다 (실패 시 submit 이 되돌림)
+    setInput(''); // 보내면 입력창을 비운다 (실패 시 되돌림)
+    if (isTarot) return void tarotDraw(typed);
     await submit(typed, typed);
   };
 
-  const submit = async (typed: string, text: string, tarot?: TarotDraw) => {
-    const userTurnsBefore = msgs.filter((m) => m.role === 'user').length;
-    const next: Msg[] = [...msgs, { role: 'user', content: text, ...(tarot ? { tarot } : {}) }];
-    setMsgs(next);
+  const persist = (all: Msg[], typed: string, userTurnsBefore: number, nextMemo: ChatMemo = memo) =>
+    store.updateSession(session.id, {
+      messages: all,
+      memo: nextMemo,
+      ...(session.title === '새 상담' && userTurnsBefore === 0 ? { title: titleFrom(typed) } : {}),
+    });
+
+  /** 타로 [1] 질문 → 서버가 정규화·추첨 (카드는 아직 안 온다). 질문이 아니면 카드 없이 바로 답 */
+  const tarotDraw = async (typed: string) => {
+    setLoading(true);
+    setError(null);
+    setRetryToken(null);
+    try {
+      const r = await postApi<DrawRes>('/api/tarot', { action: 'draw', question: typed });
+      if (r.status === 'draw') {
+        setPendingTarot({ token: r.token, question: r.question });
+        return;
+      }
+      const all: Msg[] = [...msgs, { role: 'user', content: r.question, voided: true }, { role: 'assistant', content: r.reply, safety: r.status === 'safety' }];
+      setMsgs(all);
+      persist(all, r.question, msgs.filter((m) => m.role === 'user').length);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setInput(typed);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /** 타로 [3] 카드 공개 뒤 해석 요청. 실패하면 카드는 그대로 두고 같은 토큰으로 다시 요청할 수 있다 */
+  const tarotRead = async (token: string, base: Msg[]) => {
+    setLoading(true);
+    setError(null);
+    setRetryToken(null);
+    try {
+      const r = await postApi<ReadRes>('/api/tarot', { action: 'read', token, history: tarotHistory(base.slice(0, -1)) });
+      const mine = base[base.length - 1];
+      // reading 이 아니면 이 회차의 카드는 무효 — 말풍선에서 카드를 지운다
+      const user: Msg = r.status === 'reading' ? mine : { role: 'user', content: mine.content, voided: true };
+      const all: Msg[] = [...base.slice(0, -1), user, { role: 'assistant', content: r.reply, safety: r.status === 'safety' }];
+      setMsgs(all);
+      persist(all, mine.content, base.filter((m) => m.role === 'user').length - 1);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setRetryToken(token);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const tarotPicked = (card: TarotDraw) => {
+    if (!pendingTarot) return;
+    const base: Msg[] = [...msgs, { role: 'user', content: pendingTarot.question, tarot: card }];
+    setMsgs(base);
     setPendingTarot(null);
+    void tarotRead(pendingTarot.token, base);
+  };
+
+  const submit = async (typed: string, text: string) => {
+    const userTurnsBefore = msgs.filter((m) => m.role === 'user').length;
+    const next: Msg[] = [...msgs, { role: 'user', content: text }];
+    setMsgs(next);
     setLoading(true);
     setError(null);
     try {
@@ -96,11 +158,7 @@ export default function ChatPage({
       const all: Msg[] = [...next, { role: 'assistant', content: r.reply, card: r.card, safety: !!r.safety }];
       if (r.memo) setMemo(r.memo);
       setMsgs(all);
-      store.updateSession(session.id, {
-        messages: all,
-        memo: r.memo ?? memo,
-        ...(session.title === '새 상담' && userTurnsBefore === 0 ? { title: titleFrom(typed) } : {}),
-      });
+      persist(all, typed, userTurnsBefore, r.memo ?? memo);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setMsgs(msgs); // 실패한 메시지는 입력창으로 되돌림
@@ -113,7 +171,7 @@ export default function ChatPage({
   const who = nameOf(character, hub);
 
   return (
-    <div className="chat">
+    <div className={`chat${pendingTarot ? ' tarot-dark' : ''}`}>
       <div className="chat-head">
         <Avatar c={character} size={44} />
         <div>
@@ -135,8 +193,9 @@ export default function ChatPage({
         {msgs.map((m, i) =>
           m.role === 'user' ? (
             <div key={i} className="chat-row me">
-              <div className="chat-bubble me">{m.tarot ? m.content.replace(TAROT_TAG, '') : m.content}</div>
-              {m.tarot && <TarotCardView card={m.tarot} />}
+              {/* 타로: 예전 기록에 남은 [카드: …] 표기는 화면에 보이지 않게 정규화해서 그린다 */}
+              <div className="chat-bubble me">{isTarot ? normalizeQuestion(m.content).text || m.content : m.content}</div>
+              {m.tarot && !m.voided && <TarotCardView card={m.tarot} />}
             </div>
           ) : (
             <div key={i}>
@@ -157,16 +216,27 @@ export default function ChatPage({
         {pendingTarot && (
           <>
             <div className="chat-row me">
-              <div className="chat-bubble me">{pendingTarot}</div>
+              <div className="chat-bubble me">{pendingTarot.question}</div>
             </div>
-            <TarotPick onPick={(c) => void submit(pendingTarot, `${pendingTarot}\n[카드: ${c.name} (${c.reversed ? '역방향' : '정방향'})]`, c)} />
+            <TarotPick
+              key={pendingTarot.token}
+              reveal={async () => (await postApi<{ card: TarotDraw }>('/api/tarot', { action: 'reveal', token: pendingTarot.token })).card}
+              onPick={tarotPicked}
+            />
           </>
         )}
-        {loading && <Bubble who={who} text="…" />}
+        {loading && (isTarot && msgs[msgs.length - 1]?.tarot ? <CrystalBall /> : <Bubble who={who} text="…" />)}
+        {retryToken && !loading && (
+          <div className="guide-row">
+            <button className="btn-secondary" onClick={() => void tarotRead(retryToken, msgs)}>
+              같은 카드로 다시 해석 받기
+            </button>
+          </div>
+        )}
         <div ref={endRef} />
       </div>
       {error && <p className="error">{error}</p>}
-      {msgs.filter((m) => m.role === 'user').length === 0 && (
+      {msgs.filter((m) => m.role === 'user').length === 0 && !pendingTarot && (
         <div className="guide-row">
           <button className="btn-text" onClick={() => setGuide(true)}>
             ⓘ 어떤 고민을 털어놓으면 좋을까?

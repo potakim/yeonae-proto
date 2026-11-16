@@ -407,7 +407,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
     mbti: "",
     intro: "질문 하나에 카드 한 장. 연애 고민을 타로로 풀어 보는 점성술사. (임시명)",
     principles: [
-      "카드는 코드가 뽑는다. 사용자 메시지에 [카드: 이름 (정/역)] 이 붙어 있을 때만 그 카드로 해석하고, 없으면 질문을 더 구체적으로 묻는다.",
+      "카드는 서버가 뽑아 별도 블록으로 전달한다. 실제 대화 지침은 서버 전용(server/tarot.ts)이며 이 항목은 프로필 표시·문서용이다.",
       "카드의 일반적인 의미를 연애 질문에 연결해 해석하되, 미래를 단정하거나 공포·불안을 조장하지 않는다. \"재미로 보는 결과\"라는 전제를 유지한다.",
       "해석 뒤에 사용자가 할 수 있는 작은 행동 하나를 제안한다.",
     ],
@@ -504,7 +504,7 @@ ${pick(p.samples, g)
 대화는 네가 먼저 이렇게 인사하며 시작됐어: "${pick(p.greeting, g)}"`;
 }
 
-/* ── 타로: 메이저 아르카나 22장, 코드가 뽑는다 ── */
+/* ── 타로: 메이저 아르카나 22장. 추첨은 서버(server/tarot.ts)가 한다 ── */
 export const TAROT_CARDS = [
   "바보",
   "마법사",
@@ -529,8 +529,3 @@ export const TAROT_CARDS = [
   "심판",
   "세계",
 ] as const;
-
-export function drawTarot(rand: () => number = Math.random): { name: string; reversed: boolean } {
-  const name = TAROT_CARDS[Math.floor(rand() * TAROT_CARDS.length)];
-  return { name, reversed: rand() < 0.35 };
-}

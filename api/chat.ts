@@ -36,6 +36,8 @@ export async function handleChat(request: Request, deps: HandlerDeps = {}): Prom
   const hub: Hub = body.hub === '언니' ? '언니' : '형';
   // 캐릭터 페르소나 (없으면 성별 허브). 프롬프트 버전 = chat + persona
   const persona = PERSONAS[isPersonaId(body.character) ? body.character : hub === '언니' ? 'hub-f' : 'hub-m'];
+  // 타로는 카드 추첨·입력 격리·출력 검사가 필요해 전용 경로만 쓴다 (3차 리뷰 2026-11-16)
+  if (persona.id === 'tarot') return json(400, { error: '타로는 /api/tarot 을 사용해요.' });
   const raw = body.messages as { role?: unknown; content?: unknown }[] | undefined;
   if (!Array.isArray(raw) || raw.length === 0) return json(400, { error: 'messages 가 필요해요.' });
   const msgs = raw.slice(-MAX_TURNS).map((m) => ({

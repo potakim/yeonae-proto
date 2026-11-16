@@ -8,6 +8,7 @@
     "api/compat.ts": { "maxDuration": 120 },
     "api/personality.ts": { "maxDuration": 90 },
     "api/chat.ts": { "maxDuration": 60 },
+    "api/tarot.ts": { "maxDuration": 60 },
     "api/kakao.ts": { "maxDuration": 180 }
   }
 }

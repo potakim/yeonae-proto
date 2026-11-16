@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { drawTarotCard, tarotImage, type TarotDraw } from '../lib/tarot';
+import { tarotImage, type TarotDraw } from '../lib/tarot';
 
 /**
  * 타로 카드 — 이미지는 라이더-웨이트 덱(Pamela Colman Smith, 1909, 퍼블릭 도메인) 위키미디어 커먼즈 사본.
@@ -43,41 +43,95 @@ export function TarotCardView({ card, size = 'md' }: { card: TarotDraw; size?: '
 }
 
 /**
- * 뒷면 5장 중 한 장 고르기 → 뒤집기 → onPick.
- * 어느 자리를 골라도 카드는 코드가 무작위로 뽑는다 (서버·LLM 이 뽑지 않음).
+ * 뒷면 5장 중 한 장 고르기 (3차 리뷰 2026-11-16: 선택 확인 단계 추가).
+ * ① 카드를 누르면 위로 빠져 반짝이고 나머지는 흑백 → ② "이 카드로 결정" 을 눌러야 확정 (고른 카드를 다시 누르면 취소)
+ * → ③ 서버가 뽑아 둔 카드를 받아 뒤집기 → onPick.
+ * 어느 자리를 골라도 카드는 서버가 이미 뽑아 둔 한 장이다 (브라우저·LLM 이 뽑지 않음).
  */
-export function TarotPick({ onPick, rand }: { onPick: (card: TarotDraw) => void; rand?: () => number }) {
-  const [picked, setPicked] = useState<number | null>(null);
+export function TarotPick({ reveal, onPick }: { reveal: () => Promise<TarotDraw>; onPick: (card: TarotDraw) => void }) {
+  const [selected, setSelected] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
   const [card, setCard] = useState<TarotDraw | null>(null);
-  const choose = (i: number) => {
-    if (picked !== null) return;
-    const c = drawTarotCard(rand);
-    setPicked(i);
-    setCard(c);
-    window.setTimeout(() => onPick(c), 1100);
+  const [error, setError] = useState<string | null>(null);
+  const locked = busy || card !== null;
+  const tap = (i: number) => {
+    if (locked) return;
+    setError(null);
+    setSelected((cur) => (cur === i ? null : i));
   };
+  const confirm = async () => {
+    if (selected === null || locked) return;
+    setBusy(true);
+    try {
+      const c = await reveal();
+      setCard(c);
+      window.setTimeout(() => onPick(c), 1100);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const hint = card ? `${card.name} ${card.reversed ? '역방향' : '정방향'}` : selected === null ? '마음이 가는 카드 한 장을 골라요' : '정말 이 카드로 결정하시겠습니까?';
   return (
-    <div className="tarot-pick" role="group" aria-label="카드 고르기">
-      <p className="tarot-pick-hint">{picked === null ? '마음이 가는 카드 한 장을 골라요' : `${card?.name} ${card?.reversed ? '역방향' : '정방향'}`}</p>
+    <div className={`tarot-pick${selected !== null ? ' has-selection' : ''}`} role="group" aria-label="카드 고르기">
+      <p className="tarot-pick-hint" aria-live="polite">
+        {hint}
+      </p>
       <div className="tarot-fan">
         {[0, 1, 2, 3, 4].map((i) => (
           <button
             key={i}
-            className={`tarot-slot${picked === i ? ' flipped' : ''}${picked !== null && picked !== i ? ' dim' : ''}`}
+            className={`tarot-slot${selected === i ? ' selected' : ''}${selected !== null && selected !== i ? ' dim' : ''}${card && selected === i ? ' flipped' : ''}`}
             style={{ ['--i' as string]: i - 2 }}
-            onClick={() => choose(i)}
-            disabled={picked !== null}
-            aria-label={`${i + 1}번째 카드`}
+            onClick={() => tap(i)}
+            disabled={locked}
+            aria-pressed={selected === i}
+            aria-label={`${i + 1}번째 카드${selected === i ? ' (선택됨, 다시 누르면 취소)' : ''}`}
           >
             <span className="tarot-inner">
               <span className="tarot-face back">
                 <CardBack />
               </span>
-              <span className="tarot-face front">{card && picked === i && <img src={tarotImage(card.index)} alt="" className={card.reversed ? 'reversed' : ''} />}</span>
+              <span className="tarot-face front">{card && selected === i && <img src={tarotImage(card.index)} alt="" className={card.reversed ? 'reversed' : ''} />}</span>
             </span>
           </button>
         ))}
       </div>
+      <div className="tarot-confirm">
+        {selected !== null && !card && (
+          <>
+            <button className="btn-primary tarot-confirm-btn" onClick={() => void confirm()} disabled={busy}>
+              {busy ? '카드를 여는 중…' : '✓ 이 카드로 결정'}
+            </button>
+            <p className="tarot-confirm-note">선택한 카드를 다시 누르면 다른 카드를 고를 수 있어요</p>
+          </>
+        )}
+        {error && <p className="error">{error}</p>}
+      </div>
+    </div>
+  );
+}
+
+/** 답변 대기 중 수정구 (3차 리뷰: 3~5초 대기 시간의 몰입감) */
+export function CrystalBall() {
+  return (
+    <div className="crystal" role="status" aria-live="polite">
+      <div className="crystal-orb" aria-hidden>
+        <span className="crystal-glow" />
+        <span className="crystal-ball" />
+        <span className="crystal-spark s1">✦</span>
+        <span className="crystal-spark s2">✦</span>
+        <span className="crystal-spark s3">✧</span>
+        <span className="crystal-base" />
+      </div>
+      <p className="crystal-text">수정구에 카드의 기운을 비추는 중…</p>
+      <span className="crystal-dots" aria-hidden>
+        <i />
+        <i />
+        <i />
+      </span>
+      <p className="crystal-sub">보통 3~5초 걸려요</p>
     </div>
   );
 }
