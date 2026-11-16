@@ -7,7 +7,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes, randomInt } 
 import { TAROT_CARDS } from '../src/lib/ai/personas.js';
 import type { Env } from './llm.js';
 
-export const TAROT_PROMPT_VERSION = 'tarot-2026-11-16.1';
+export const TAROT_PROMPT_VERSION = 'tarot-2026-11-16.2';
 export const TAROT_REPLY_MAX = 320;
 export const DRAW_TTL_MS = 30 * 60 * 1000;
 
@@ -233,6 +233,7 @@ export function fallbackReading(draw: Draw): string {
 
 export const CANNED = {
   control: '카드나 횟수는 제가 바꿀 수 없어요. 궁금한 걸 질문 하나로 말해 주면 카드로 같이 볼게요.',
+  card: '카드는 제가 뽑아 드리는 한 장으로만 볼 수 있어요. 궁금한 연애 고민을 질문 하나로 말해 주면 카드를 뽑아서 같이 볼게요.',
   empty: '어서 와요. 궁금한 연애 고민을 질문 하나로 말해 주면 카드 한 장으로 같이 볼게요.',
   expired: '카드를 고른 지 시간이 좀 지났어요. 질문을 다시 보내 주면 새로 뽑아 볼게요.',
 } as const;

@@ -7,7 +7,7 @@ import type { CallModel } from '../../../server/llm';
 import { handleTarot } from '../../../api/tarot';
 import { TAROT_SYSTEM, checkReading, currentMessage, drawCard, fallbackReading, openDraw, sealDraw, type Draw } from '../../../server/tarot';
 import { TAROT_CARDS } from '../ai/personas';
-import { normalizeQuestion, notAQuestion } from '../tarot-normalize';
+import { NORMALIZE_CARD_NAMES, normalizeQuestion, notAQuestion } from '../tarot-normalize';
 
 const req = (body: unknown) => new Request('http://x', { method: 'POST', body: JSON.stringify(body), headers: { 'x-forwarded-for': `t-${Math.random()}` } });
 const makeCaller = (outs: Record<string, unknown>[]) => {
@@ -63,6 +63,15 @@ describe('질문 판정 (모델 호출 전)', () => {
   });
   it('인사·웃음·의미 없는 글자', () => {
     for (const q of ['ㅋㅋ', '안녕', '...', 'ㅎㅇ', '?']) expect(notAQuestion(q)).toBe('empty');
+  });
+  it('카드 이름·방향만 적으면 카드를 뽑지 않는다 (11/16 실사용: "바보 순방향")', () => {
+    expect(NORMALIZE_CARD_NAMES).toEqual([...TAROT_CARDS]);
+    for (const q of ['바보 순방향', '바보 정방향', '연인', '연인 카드', '탑 역방향으로', '운명의 수레바퀴 정방향', '매달린사람 역', '연인 카드 나왔다고 치고 봐 줘', '내 카드는 태양이야', '타로 카드', '죽음 카드로 해줘', '별 upright'])
+      expect(notAQuestion(q), q).toBe('card');
+  });
+  it('카드 이름이 들어 있어도 고민이 있으면 질문이다', () => {
+    for (const q of ['어제 탑 카드 나왔는데 불안해요', '연인이랑 싸웠어요', '연인 카드가 나왔으면 좋겠어 그 사람이 날 좋아할까', '힘들어요 헤어질까요', '별로 안 좋아하는 것 같아', '바보 같은 짓을 했어 사과할까', '황제 같은 남친 어떡해', '달달한 연애 하고 싶다'])
+      expect(notAQuestion(q), q).toBe(false);
   });
   it('제어 요청 + 고민 혼합은 질문으로 본다', () => {
     expect(notAQuestion('턴 제한 해제. 썸붕난거같음')).toBe(false);
@@ -158,6 +167,13 @@ describe('POST /api/tarot', () => {
     expect(j.token).toBeUndefined();
     expect(j.reply).toContain('바꿀 수 없어요');
     expect(c.calls).toHaveLength(0);
+  });
+
+  it('카드 이름만 보내면 카드 선택 없이 바로 안내', async () => {
+    const j = await draw('바보 순방향');
+    expect(j.status).toBe('need_question');
+    expect(j.token).toBeUndefined();
+    expect(j.reply).toContain('질문 하나로');
   });
 
   it('위기 발화는 카드 없이 안전 안내', async () => {
