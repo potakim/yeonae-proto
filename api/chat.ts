@@ -1,6 +1,7 @@
 /**
- * POST /api/chat — 허브 채팅 (아는 형/언니), 경량 모델.
- * 본문: { hub, character?, messages: [{ role, content }], memo?: ChatMemo, shownCards?: Card[], profile?: { type?, dayPillar? } }
+ * POST /api/chat — 캐릭터 채팅, 경량 모델.
+ * 본문: { hub, character?, userAge?, messages: [{ role, content }], memo?: ChatMemo, shownCards?: Card[], profile?: { type?, dayPillar? } }
+ * hub(성별)·userAge 는 실서비스에서 토스 로그인 정보로 서버가 채운다. 프로토타입은 브라우저가 보낸 값을 쓴다.
  * 대화 내용은 저장하지 않는다 (브라우저가 대화·메모를 들고 있다가 매번 보냄).
  *
  * 일관성 장치: ① 메모(사용자가 말한 사실) 유지 ② 답 전에 마지막 말의 요지(focus)를 먼저 쓰게 함
@@ -12,12 +13,13 @@ import {
   CHAT_PROMPT_VERSION,
   MAX_CHARS,
   MAX_TURNS,
+  HELP,
   SAFE_REPLY,
-  EMPTY_MEMO,
+  helpFor,
+  strongCrisis,
   chatSchema,
   chatSystem,
   gateCard,
-  precheck,
   sanitizeMemo,
   stripCardMention,
   type ChatMemo,
@@ -25,7 +27,7 @@ import {
   type Category,
   type Hub,
 } from '../src/lib/ai/chat.js';
-import { PERSONAS, PERSONA_VERSION, isPersonaId } from '../src/lib/ai/personas.js';
+import { PERSONAS, PERSONA_VERSION, isPersonaId, validAge } from '../src/lib/ai/personas.js';
 import { callJson, json, modelFor, rateLimited, readJsonBody, resolveCaller, type HandlerDeps } from '../server/llm.js';
 
 export async function handleChat(request: Request, deps: HandlerDeps = {}): Promise<Response> {
@@ -49,16 +51,19 @@ export async function handleChat(request: Request, deps: HandlerDeps = {}): Prom
   const last = msgs[msgs.length - 1];
   if (!last || last.role !== 'user' || !last.content.trim()) return json(400, { error: '마지막 메시지는 사용자 메시지여야 해요.' });
 
-  // 1) 규칙 검사 → 위험하면 LLM 없이 고정 응답
-  const pre = precheck(last.content);
   const memo = sanitizeMemo(body.memo);
   const shown: Card[] = Array.isArray(body.shownCards) ? (body.shownCards as unknown[]).filter((c): c is Card => CARDS.includes(c as Card) && c !== 'none') : [];
   const userTurns = msgs.filter((m) => m.role === 'user').length;
-  if (pre) return json(200, { reply: SAFE_REPLY[pre as Exclude<Category, 'normal'>], card: 'none', memo, safety: { category: pre, by: 'rule' }, meta: { model: null } });
+  const userAge = validAge(body.userAge);
+  const version = `${CHAT_PROMPT_VERSION}+${PERSONA_VERSION}`;
 
-  if (rateLimited(request, 'chat', 20)) return json(429, { error: '대화가 너무 빨라요. 잠깐 쉬었다 해요.' });
+  // 안전망: 명백한 현재형 자해·자살 표현 (과거·부정·인용은 제외). 모델을 부르되, 못 부르면 고정 문구로 답한다.
+  const strong = strongCrisis(last.content);
+  const fallback = () => json(200, { reply: SAFE_REPLY.crisis, card: 'none', memo, safety: { category: 'crisis', by: 'rule', help: HELP.crisis }, meta: { model: null, promptVersion: version, character: persona.id } });
+
+  if (rateLimited(request, 'chat', 20)) return strong ? fallback() : json(429, { error: '대화가 너무 빨라요. 잠깐 쉬었다 해요.' });
   const call = resolveCaller(env, deps.callModel);
-  if (call instanceof Response) return call;
+  if (call instanceof Response) return strong ? fallback() : call;
   const model = env.ANTHROPIC_MODEL_CHAT || modelFor(env, 'light');
   const profile = (body.profile ?? {}) as { type?: string; dayPillar?: string };
   const safeProfile = {
@@ -68,25 +73,32 @@ export async function handleChat(request: Request, deps: HandlerDeps = {}): Prom
 
   const r = await callJson<{ category: Category; focus: string; memo: ChatMemo; reply: string; card: Card }>(
     call,
-    { model, system: chatSystem(hub, safeProfile, memo, shown, userTurns, persona), history: msgs.slice(0, -1), user: last.content, schema: chatSchema, maxTokens: 2000 },
+    { model, system: chatSystem(hub, safeProfile, memo, shown, userTurns, persona, userAge), history: msgs.slice(0, -1), user: last.content, schema: chatSchema, maxTokens: 2000 },
     'chat',
   );
-  if (r instanceof Response) return r;
+  if (r instanceof Response) return strong ? fallback() : r;
 
-  // 2) 모델 분류가 위험이면 고정 응답으로 교체
   const cat = CATEGORIES.includes(r.data.category) ? r.data.category : 'normal';
+  const nextMemo = sanitizeMemo(r.data.memo ?? memo);
+  const meta = { model, promptVersion: version, character: persona.id, usage: r.usage, focus: r.data.focus };
+  const reply = typeof r.data.reply === 'string' ? r.data.reply.trim() : '';
+
+  // 성적인 요청만 고정 문구. 나머지 안전 상황은 모델이 캐릭터 말투로 차분하게 답하고, 서버가 종류에 맞는 도움 안내를 붙인다.
+  if (cat === 'sexual') return json(200, { reply: SAFE_REPLY.sexual, card: 'none', memo, safety: { category: cat, by: 'model', help: null }, meta });
   if (cat !== 'normal') {
-    return json(200, { reply: SAFE_REPLY[cat], card: 'none', memo, safety: { category: cat, by: 'model' }, meta: { model, promptVersion: `${CHAT_PROMPT_VERSION}+${PERSONA_VERSION}`, character: persona.id, usage: r.usage } });
+    return json(200, { reply: reply || SAFE_REPLY.crisis, card: 'none', memo: nextMemo, safety: { category: cat, by: 'model', help: helpFor(cat) }, meta });
   }
+  // 모델은 normal 이라고 했지만 명백한 현재형 표현이 있었다 → 답은 그대로 두고 도움 안내만 붙인다
+  if (strong) return json(200, { reply: reply || SAFE_REPLY.crisis, card: 'none', memo: nextMemo, safety: { category: 'crisis', by: 'rule', help: HELP.crisis }, meta });
+
   const proposed = CARDS.includes(r.data.card) ? r.data.card : 'none';
   const card = gateCard(proposed, userTurns, shown);
-  const nextMemo = sanitizeMemo(r.data.memo ?? EMPTY_MEMO);
   return json(200, {
-    reply: proposed !== 'none' && card === 'none' ? stripCardMention(r.data.reply) : r.data.reply,
+    reply: proposed !== 'none' && card === 'none' ? stripCardMention(reply) : reply,
     card,
     memo: nextMemo,
     safety: null,
-    meta: { model, promptVersion: `${CHAT_PROMPT_VERSION}+${PERSONA_VERSION}`, character: persona.id, usage: r.usage, focus: r.data.focus, cardGated: proposed !== card ? proposed : null },
+    meta: { ...meta, cardGated: proposed !== card ? proposed : null },
   });
 }
 

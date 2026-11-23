@@ -10,13 +10,12 @@
  * 브라우저가 보내는 것은 질문·토큰·지난 회차 기록뿐. 카드 이름은 받지 않는다 (지난 회차는 표시용 기록에서 읽되 해석엔 안 씀).
  * 프로토타입 한계: 저장소가 없어 재추첨 횟수·무료 1장 차감은 강제하지 못한다 → 실서비스 draws 테이블에서 처리.
  */
-import { SAFE_REPLY, precheck, type Category } from '../src/lib/ai/chat.js';
+import { HELP, SAFE_REPLY, strongCrisis, type Help } from '../src/lib/ai/chat.js';
 import { TAROT_CARDS } from '../src/lib/ai/personas.js';
 import { normalizeQuestion, notAQuestion } from '../src/lib/tarot-normalize.js';
 import { callJson, json, modelFor, rateLimited, readJsonBody, resolveCaller, type HandlerDeps } from '../server/llm.js';
 import {
   CANNED,
-  SAFETY_LINES,
   TAROT_PROMPT_VERSION,
   TAROT_SYSTEM,
   cardName,
@@ -34,7 +33,9 @@ import {
 } from '../server/tarot.js';
 
 const MAX_HISTORY_TURNS = 6;
-type Out = { status: TarotStatus; card: string; orientation: string; reply: string };
+type Out = { status: TarotStatus; card: string; orientation: string; safety_type?: string; reply: string };
+/** 위험 종류에 맞는 도움 안내만 붙인다 (연락처를 일괄 표시하지 않음 — 노션 2026-11-19 개정). other 는 안내 없이 안전 확인만 */
+const helpOf = (t: string | undefined): Help | null => (t === 'self_harm' ? HELP.crisis : t === 'harm_others' ? HELP.harm_others : t === 'violence' ? HELP.violence_victim : null);
 
 /** 브라우저가 보낸 지난 회차 기록을 모델용 이력으로 다시 만든다 (사용자 글은 정규화, 카드는 "지난 카드" 한 줄) */
 function buildHistory(raw: unknown): { role: 'user' | 'assistant'; content: string }[] {
@@ -68,9 +69,9 @@ export async function handleTarot(request: Request, deps: HandlerDeps = {}): Pro
   if (body.action === 'draw') {
     if (typeof body.question !== 'string' || !body.question.trim()) return json(400, { error: 'question 이 필요해요.' });
     if (rateLimited(request, 'tarot-draw', 20)) return json(429, { error: '카드를 너무 빨리 뽑고 있어요. 잠깐 쉬었다 해요.' });
-    const pre = precheck(body.question);
     const n = normalizeQuestion(body.question);
-    if (pre) return json(200, { status: 'safety', question: n.text || '…', reply: SAFE_REPLY[pre as Exclude<Category, 'normal'>], meta });
+    // 안전망: 명백한 현재형 자해·자살 표현이면 카드를 뽑지 않는다. 과거·인용 등 맥락이 필요한 경우는 해석 단계에서 모델이 판단한다.
+    if (strongCrisis(body.question)) return json(200, { status: 'safety', question: n.text || '…', reply: SAFE_REPLY.crisis, help: HELP.crisis, meta });
     const not = notAQuestion(n.text);
     if (not) return json(200, { status: 'need_question', question: n.text || '…', reply: CANNED[not], meta });
     return json(200, { status: 'draw', token: sealDraw(env, drawCard(n.text, n.cardTagRemoved, now)), question: n.text, cardTagRemoved: n.cardTagRemoved, meta });
@@ -102,7 +103,7 @@ export async function handleTarot(request: Request, deps: HandlerDeps = {}): Pro
     if (status !== 'reading') {
       // 카드 무효(void) — 화면은 이 회차의 카드를 지우고, 실서비스는 차감을 취소한다
       const text = clampReply(r.data.reply || CANNED.empty);
-      return json(200, { status, reply: status === 'safety' ? `${text}\n${SAFETY_LINES}` : text, void: true, meta: { ...meta, model, usage: r.usage } });
+      return json(200, { status, reply: text, help: status === 'safety' ? helpOf(r.data.safety_type) : null, void: true, meta: { ...meta, model, usage: r.usage } });
     }
     const why = checkReading(r.data, draw);
     if (!why) return json(200, { status: 'reading', reply: clampReply(r.data.reply), card, meta: { ...meta, model, usage: r.usage, retried: attempt > 0 } });

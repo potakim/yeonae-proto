@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { calculateSaju, type SajuInput } from '../saju';
 import { computeCompat, compatCriteriaMarkdown } from '../compat/compat';
 import { computeChatStats, interestScore, maskText, type ChatMessage } from '../kakao/stats';
-import { gateCard, precheck, sanitizeMemo, stripCardMention } from '../ai/chat';
+import { gateCard, sanitizeMemo, stripCardMention, strongCrisis } from '../ai/chat';
 import { getQuestions } from '../personality/questions';
 import type { CallModel } from '../../../server/llm';
 import { handleCompat } from '../../../api/compat';
@@ -126,29 +126,75 @@ describe('카톡 통계·마스킹', () => {
   });
 });
 
-describe('허브 채팅 안전 장치', () => {
-  it('위기·피해·감시 요청 규칙 감지', () => {
-    expect(precheck('요즘 너무 힘들어서 죽고 싶어')).toBe('crisis');
-    expect(precheck('남친이 저를 때렸어요')).toBe('violence_victim');
-    expect(precheck('여친 폰 비밀번호 몰래 알아내는 법')).toBe('harmful_request');
-    expect(precheck('썸남이 답장을 늦게 해요')).toBeNull();
+describe('채팅 안전 장치 (노션 2026-11-19 위기 안내 기준)', () => {
+  it('안전망 규칙: 명백한 현재형 표현만 잡고, 과거·부정·인용·일상 표현은 모델 판단에 맡긴다', () => {
+    for (const t of ['요즘 너무 힘들어서 죽고 싶어', '너무 힘들어서 죽어버리고 싶다', '그냥 사라지고 싶어요', '지금 죽고 싶어요']) expect(strongCrisis(t), t).toBe(true);
+    for (const t of [
+      '그때는 죽고 싶었지만 지금은 그런 생각 없어',
+      '헤어지자고 했더니 상대가 죽겠다고 협박해',
+      '헤어지자고 했더니 죽어버리겠대요',
+      '죽고 싶다는 생각은 안 해',
+      '여친이 나한테 못생겼다고 헤어지자고 했어',
+      '썸남이 답장을 늦게 해요',
+      '걔 너무 귀여워 죽겠어',
+    ])
+      expect(strongCrisis(t), t).toBe(false);
   });
 
-  it('위기 발화는 LLM 호출 없이 고정 응답(109 안내)', async () => {
-    const c = makeCaller();
-    const res = await handleChat(req({ hub: '형', messages: [{ role: 'user', content: '그냥 사라지고 싶어요' }] }), { env: {}, callModel: c.fn });
+  it('위기: 모델이 캐릭터 말투로 답하고, 서버가 도움 안내를 따로 붙인다 (답을 갈아끼우지 않음)', async () => {
+    const c = makeCaller([{ category: 'crisis', reply: '많이 힘들었겠다. 지금 혼자 있어?', card: 'kakao', memo: { situation: '이별', concern: '너무 힘듦', partner: '', facts: [], pref: '' } }]);
+    const res = await handleChat(req({ hub: '형', messages: [{ role: 'user', content: '너무 힘들어서 죽어버리고 싶다' }] }), { env: {}, callModel: c.fn });
     const j = await res.json();
-    expect(j.reply).toContain('109');
-    expect(j.safety.by).toBe('rule');
-    expect(c.calls).toHaveLength(0);
-  });
-
-  it('모델이 위험으로 분류하면 고정 응답으로 교체', async () => {
-    const c = makeCaller([{ category: 'violence_victim', reply: '모델 답', card: 'kakao' }]);
-    const res = await handleChat(req({ hub: '언니', messages: [{ role: 'user', content: '요즘 그 사람이 좀 무서워요' }] }), { env: {}, callModel: c.fn });
-    const j = await res.json();
-    expect(j.reply).toContain('1366');
+    expect(c.calls).toHaveLength(1);
+    expect(j.reply).toBe('많이 힘들었겠다. 지금 혼자 있어?');
+    expect(j.reply).not.toContain('109');
+    expect(j.safety.category).toBe('crisis');
+    expect(j.safety.help.lines.join(' ')).toContain('109');
     expect(j.card).toBe('none');
+    expect(j.memo.situation).toBe('이별');
+  });
+
+  it('위험 종류에 맞는 안내만 붙는다: 타해 → 112, 피해 → 1366, 감시 요청 → 안내 없음', async () => {
+    const run = async (category: string, content: string) => {
+      const c = makeCaller([{ category, reply: '모델 답', card: 'none' }]);
+      return (await handleChat(req({ hub: '언니', messages: [{ role: 'user', content }] }), { env: {}, callModel: c.fn })).json();
+    };
+    const harm = await run('harm_others', '걔를 죽여버리고 싶다');
+    expect(harm.safety.help.lines.join(' ')).toContain('112');
+    expect(harm.safety.help.lines.join(' ')).not.toContain('1366');
+    const victim = await run('violence_victim', '요즘 그 사람이 좀 무서워요');
+    expect(victim.reply).toBe('모델 답');
+    expect(victim.safety.help.lines.join(' ')).toContain('1366');
+    const snoop = await run('harmful_request', '전여친 인스타 비번 알아냈는데 들어가볼까?');
+    expect(snoop.reply).toBe('모델 답'); // 캐릭터가 직접 말린다
+    expect(snoop.safety.help).toBeNull();
+    const sexual = await run('sexual', '…');
+    expect(sexual.reply).not.toBe('모델 답'); // 성적인 요청만 고정 문구
+  });
+
+  it('일반 고민에는 안내가 붙지 않는다: 이별·외모 비하, 과거 이야기', async () => {
+    for (const content of ['여친이 나한테 못생겼다고 헤어지자고 했어', '그때는 죽고 싶었지만 지금은 그런 생각 없어']) {
+      const c = makeCaller([{ category: 'normal', reply: '어우, 말을 너무 세게 했네.', card: 'none' }]);
+      const j = await (await handleChat(req({ hub: '형', messages: [{ role: 'user', content }] }), { env: {}, callModel: c.fn })).json();
+      expect(j.safety).toBeNull();
+      expect(j.reply).toBe('어우, 말을 너무 세게 했네.');
+    }
+  });
+
+  it('안전망: 명백한 표현인데 모델이 normal 이면 답은 그대로 두고 안내를 붙인다. 모델을 못 부르면 고정 문구', async () => {
+    const c = makeCaller([{ category: 'normal', reply: '무슨 일 있었어?', card: 'kakao' }]);
+    const j = await (await handleChat(req({ hub: '형', messages: [{ role: 'user', content: '그냥 사라지고 싶어요' }] }), { env: {}, callModel: c.fn })).json();
+    expect(j.reply).toBe('무슨 일 있었어?');
+    expect(j.safety.by).toBe('rule');
+    expect(j.safety.help.lines.join(' ')).toContain('109');
+    expect(j.card).toBe('none');
+    // API 키도 호출기도 없을 때
+    const off = await handleChat(req({ hub: '형', messages: [{ role: 'user', content: '지금 죽고 싶어요' }] }), { env: {} });
+    expect(off.status).toBe(200);
+    const k = await off.json();
+    expect(k.safety.by).toBe('rule');
+    expect(k.reply).toContain('혼자 버티지');
+    expect(k.safety.help.lines.join(' ')).toContain('109');
   });
 
   it('정상 대화: 경량 모델, 이전 턴은 history 로', async () => {
@@ -296,7 +342,7 @@ describe('허브 채팅 일관성', () => {
     const c = makeCaller([{ category: 'normal', focus: '인사', memo: { situation: '모름', concern: '', partner: '', facts: [] }, reply: '반가워요. 무슨 일 있어요?', card: 'none' }]);
     await handleChat(req({ hub: '언니', messages: [{ role: 'user', content: '안녕하세요' }] }), { env: {}, callModel: c.fn });
     expect(c.calls[0].system).toContain('card 를 반드시 none');
-    expect(c.calls[0].system).toContain('고은언니(이고은, 31세, ISFJ)'); // 언니 허브 = 고은언니 페르소나
+    expect(c.calls[0].system).toContain('"이고은(ISFJ)"'); // 여성 사용자 허브 = 이고은 페르소나
   });
 
   it('character 로 페르소나를 고르면 그 캐릭터 원칙·인사가 프롬프트에 들어가고 카드 정책이 바뀐다', async () => {
@@ -305,8 +351,8 @@ describe('허브 채팅 일관성', () => {
       { category: 'normal', focus: '질문', memo: { situation: '모름', concern: '', partner: '', facts: [] }, reply: '카드를 보자.', card: 'none' },
     ]);
     await handleChat(req({ hub: '형', character: 'soeun', messages: [{ role: 'user', content: '남친이 연락이 줄었어요' }] }), { env: {}, callModel: c.fn });
-    expect(c.calls[0].system).toContain('소은누나(박소은, 25세, ENTP)');
-    expect(c.calls[0].system).toContain('사건 기반 조언');
+    expect(c.calls[0].system).toContain('"박소은(ENTP)"');
+    expect(c.calls[0].system).toContain('확인된 사실과 사용자의 추측을 반드시 나눈다');
     expect(c.calls[0].system).toContain('분명히 필요할 때만 card');
     // 타로는 전용 경로(/api/tarot)만 — 공용 채팅으로는 받지 않는다
     const r2 = await handleChat(req({ hub: '형', character: 'tarot', messages: [{ role: 'user', content: '연락할까요?\n[카드: 별 (정방향)]' }] }), { env: {}, callModel: c.fn });
@@ -317,7 +363,7 @@ describe('허브 채팅 일관성', () => {
   it('모르는 character 는 성별 허브로 떨어진다', async () => {
     const c = makeCaller([{ category: 'normal', focus: '', memo: { situation: '모름', concern: '', partner: '', facts: [] }, reply: '응', card: 'none' }]);
     await handleChat(req({ hub: '형', character: 'nope', messages: [{ role: 'user', content: '안녕' }] }), { env: {}, callModel: c.fn });
-    expect(c.calls[0].system).toContain('기훈형(최기훈, 34세, ESFJ)');
+    expect(c.calls[0].system).toContain('"최기훈(ESFJ)"');
   });
 });
 

@@ -106,7 +106,7 @@ export default function ChatSidebar({
               <b>상대</b> {current.memo.partner || '—'}
             </p>
             <ul>{current.memo.facts.map((f) => <li key={f}>{f}</li>)}</ul>
-            <button className="btn-text danger" onClick={() => store.updateSession(current.id, { memo: { situation: '모름', concern: '', partner: '', facts: [] } })}>
+            <button className="btn-text danger" onClick={() => store.updateSession(current.id, { memo: { situation: '모름', concern: '', partner: '', facts: [], pref: '' } })}>
               기억 지우기
             </button>
           </div>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { HubCharacter, Screen } from '../App';
 import { postApi } from '../lib/ai/client';
-import { CARD_INFO, type Card, type ChatMemo } from '../lib/ai/chat';
+import { CARD_INFO, type Card, type ChatMemo, type Help } from '../lib/ai/chat';
 import { useSessionStore } from '../lib/sessions/context';
 import { titleFrom, type Session } from '../lib/sessions/store';
 import ChatSidebar from '../components/ChatSidebar';
@@ -16,7 +16,10 @@ interface Msg {
   role: 'user' | 'assistant';
   content: string;
   card?: Card;
+  /** 예전 기록의 고정 안전 문구 표시용 */
   safety?: boolean;
+  /** 서버가 위험 종류에 맞춰 붙인 도움 안내 */
+  help?: Help | null;
   /** 타로: 이 질문에 서버가 뽑아 준 카드 (카드 그림·이름·방향은 이 값으로만 그린다) */
   tarot?: TarotDraw;
   /** 타로: 질문이 아니거나 범위 밖이라 카드를 쓰지 않은 회차 */
@@ -24,8 +27,8 @@ interface Msg {
 }
 
 type TarotStatus = 'reading' | 'need_question' | 'out_of_scope' | 'safety';
-type DrawRes = { status: 'draw'; token: string; question: string } | { status: 'need_question' | 'safety'; question: string; reply: string };
-type ReadRes = { status: TarotStatus; reply: string; card?: TarotDraw };
+type DrawRes = { status: 'draw'; token: string; question: string } | { status: 'need_question' | 'safety'; question: string; reply: string; help?: Help | null };
+type ReadRes = { status: TarotStatus; reply: string; card?: TarotDraw; help?: Help | null };
 /** 지난 회차 기록 — 서버가 다시 정규화하고, 카드는 "지난 카드" 한 줄로만 쓴다 */
 const tarotHistory = (list: Msg[]) => list.map(({ role, content, tarot }) => ({ role, content, ...(tarot ? { tarot: { index: tarot.index, reversed: tarot.reversed } } : {}) }));
 
@@ -33,6 +36,7 @@ const CARD_SCREEN: Record<Exclude<Card, 'none'>, Screen> = { kakao: 'kakao', com
 
 export default function ChatPage({
   hub,
+  age,
   character,
   session,
   onSwitchSession,
@@ -40,6 +44,8 @@ export default function ChatPage({
   profile,
 }: {
   hub: HubCharacter;
+  /** 사용자 나이 (프로토타입 임시 입력, 없으면 null) */
+  age: number | null;
   character: Character;
   session: Session;
   onSwitchSession: (s: Session) => void;
@@ -99,7 +105,7 @@ export default function ChatPage({
         setPendingTarot({ token: r.token, question: r.question });
         return;
       }
-      const all: Msg[] = [...msgs, { role: 'user', content: r.question, voided: true }, { role: 'assistant', content: r.reply, safety: r.status === 'safety' }];
+      const all: Msg[] = [...msgs, { role: 'user', content: r.question, voided: true }, { role: 'assistant', content: r.reply, help: r.help ?? null }];
       setMsgs(all);
       persist(all, r.question, msgs.filter((m) => m.role === 'user').length);
     } catch (e) {
@@ -120,7 +126,7 @@ export default function ChatPage({
       const mine = base[base.length - 1];
       // reading 이 아니면 이 회차의 카드는 무효 — 말풍선에서 카드를 지운다
       const user: Msg = r.status === 'reading' ? mine : { role: 'user', content: mine.content, voided: true };
-      const all: Msg[] = [...base.slice(0, -1), user, { role: 'assistant', content: r.reply, safety: r.status === 'safety' }];
+      const all: Msg[] = [...base.slice(0, -1), user, { role: 'assistant', content: r.reply, help: r.help ?? null }];
       setMsgs(all);
       persist(all, mine.content, base.filter((m) => m.role === 'user').length - 1);
     } catch (e) {
@@ -147,15 +153,16 @@ export default function ChatPage({
     setError(null);
     try {
       const shownCards = msgs.flatMap((m) => (m.card && m.card !== 'none' ? [m.card] : []));
-      const r = await postApi<{ reply: string; card: Card; memo: ChatMemo; safety: { category: string } | null }>('/api/chat', {
+      const r = await postApi<{ reply: string; card: Card; memo: ChatMemo; safety: { category: string; help?: Help | null } | null }>('/api/chat', {
         hub,
+        userAge: age,
         character: persona.id,
         profile,
         memo,
         shownCards,
         messages: next.map(({ role, content }) => ({ role, content })),
       });
-      const all: Msg[] = [...next, { role: 'assistant', content: r.reply, card: r.card, safety: !!r.safety }];
+      const all: Msg[] = [...next, { role: 'assistant', content: r.reply, card: r.card, help: r.safety?.help ?? null }];
       if (r.memo) setMemo(r.memo);
       setMsgs(all);
       persist(all, typed, userTurnsBefore, r.memo ?? memo);
@@ -200,6 +207,7 @@ export default function ChatPage({
           ) : (
             <div key={i}>
               <Bubble who={who} text={m.content} safety={m.safety} />
+              {m.help && <HelpCard help={m.help} />}
               {m.card && m.card !== 'none' && (
                 <div className="intro-card">
                   <div className="intro-who">{CARD_INFO[m.card].who} 소개</div>
@@ -298,7 +306,21 @@ export default function ChatPage({
   );
 }
 
-/** 답변의 빈 줄은 말풍선 구분 (캐릭터별 답변 형식: 고은언니 문단, 성현이형 짧은 말 여러 개) */
+/** 위험 종류에 맞는 도움 안내 — 캐릭터 답과 따로, 서버가 정한 연락처만 보여 준다 */
+function HelpCard({ help }: { help: Help }) {
+  return (
+    <div className="help-card" role="note">
+      <strong>{help.title}</strong>
+      <ul>
+        {help.lines.map((l) => (
+          <li key={l}>{l}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** 답변의 빈 줄은 말풍선 구분 (캐릭터별 답변 형식) */
 function Bubble({ who, text, safety }: { who: string; text: string; safety?: boolean }) {
   const parts = safety ? [text] : text.split(/\n\s*\n/).map((t) => t.trim()).filter(Boolean).slice(0, 6);
   return (

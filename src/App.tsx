@@ -15,6 +15,7 @@ import { SessionProvider, useSessionStore } from './lib/sessions/context';
 import { memoForNew, type Session } from './lib/sessions/store';
 import SessionSheet from './components/SessionSheet';
 import AnalysesSheet from './components/AnalysesSheet';
+import { validAge } from './lib/ai/personas';
 
 export type Screen = 'home' | 'saju' | 'personality' | 'chat' | 'compat' | 'kakao';
 export type HubCharacter = '형' | '언니';
@@ -27,6 +28,15 @@ export default function App() {
   );
 }
 
+const AGE_KEY = 'yeonae.age';
+function readAge(): number | null {
+  try {
+    return validAge(Number(localStorage.getItem(AGE_KEY) ?? NaN));
+  } catch {
+    return null;
+  }
+}
+
 function Shell() {
   const store = useSessionStore();
   const [tab, setTab] = useState<Tab>('home');
@@ -37,6 +47,17 @@ function Shell() {
   const [profile, setProfile] = useState<Character | null>(null); // 서비스 프로필 모달
   const [current, setCurrent] = useState<Character | null>(null); // 지금 대화 중인 캐릭터
   const [hub, setHub] = useState<HubCharacter>('형');
+  // 사용자 나이 — 프로토타입 임시 입력 (실서비스: 토스 로그인 생년월일로 서버가 계산). 비어 있으면 캐릭터가 나이를 지어내지 않는다
+  const [age, setAgeState] = useState<number | null>(readAge);
+  const setAge = (v: number | null) => {
+    setAgeState(v);
+    try {
+      if (v === null) localStorage.removeItem(AGE_KEY);
+      else localStorage.setItem(AGE_KEY, String(v));
+    } catch {
+      /* ignore */
+    }
+  };
   const favorites = useFavorites(hubOf(hub).id);
   // 이 세션에서 입력한 내 정보 (궁합·대화에 재사용, 저장하지 않음)
   const [mySaju, setMySaju] = useState<SajuInput | null>(null);
@@ -109,14 +130,14 @@ function Shell() {
         </header>
       )}
       <main className={`content${inTabRoot ? ' tab-root' : ''}`}>
-        {screen === 'home' && tab === 'home' && <Home hub={hub} setHub={setHub} favorites={favorites} onOpen={openProfile} />}
+        {screen === 'home' && tab === 'home' && <Home hub={hub} setHub={setHub} age={age} setAge={setAge} favorites={favorites} onOpen={openProfile} />}
         {screen === 'home' && tab === 'talk' && <TalkTab hub={hub} onOpen={openProfile} onResume={openSession} />}
         {screen === 'home' && tab === 'intro' && <IntroTab />}
         {screen === 'home' && tab === 'my' && <MyTab />}
         {screen === 'saju' && <SajuPage onSaved={setMySaju} />}
         {screen === 'personality' && <PersonalityPage hub={hub} onType={onType} />}
         {screen === 'chat' && chatSession && (
-          <ChatPage key={chatSession.id} hub={hub} character={chatCharacter} session={chatSession} onSwitchSession={(s) => openSession(chatCharacter, s)} go={go} profile={{ type: myType, dayPillar }} />
+          <ChatPage key={chatSession.id} hub={hub} age={age} character={chatCharacter} session={chatSession} onSwitchSession={(s) => openSession(chatCharacter, s)} go={go} profile={{ type: myType, dayPillar }} />
         )}
         {screen === 'compat' && <CompatPage mySaju={mySaju} myType={myType} />}
         {screen === 'kakao' && <KakaoPage />}

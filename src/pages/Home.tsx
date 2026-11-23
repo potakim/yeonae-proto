@@ -7,6 +7,8 @@ import CharacterRow from '../components/CharacterRow';
 interface Props {
   hub: HubCharacter;
   setHub: (h: HubCharacter) => void;
+  age: number | null;
+  setAge: (v: number | null) => void;
   favorites: { ids: string[]; toggle: (id: string) => void; has: (id: string) => boolean };
   onOpen: (c: Character) => void;
 }
@@ -39,7 +41,7 @@ function Section({
   );
 }
 
-export default function Home({ hub, setHub, favorites, onOpen }: Props) {
+export default function Home({ hub, setHub, age, setAge, favorites, onOpen }: Props) {
   const introOn = isOn('intro_tab');
   const visible = visibleFor(hub, introOn);
   const favs = favorites.ids.map((id) => visible.find((c) => c.id === id)).filter(Boolean) as Character[];
@@ -56,7 +58,7 @@ export default function Home({ hub, setHub, favorites, onOpen }: Props) {
         </button>
       </header>
 
-      {/* 내 프로필 카드 — 프로토타입: 허브 성별 선택을 겸한다 (실서비스는 토스 로그인 성별) */}
+      {/* 내 프로필 카드 — 프로토타입: 성별·나이를 임시로 입력받는다 (실서비스는 토스 로그인 성별·생년월일) */}
       <div className="me-card">
         <span className="me-avatar" aria-hidden>
           👤
@@ -65,12 +67,29 @@ export default function Home({ hub, setHub, favorites, onOpen }: Props) {
           <strong>user_name</strong>
           <span>연애 고민이 있다면, 언제든지 💕</span>
         </span>
-        <span className="segmented mini" role="tablist" aria-label="허브 캐릭터">
-          {(['형', '언니'] as const).map((h) => (
-            <button key={h} role="tab" aria-selected={hub === h} className={hub === h ? 'active' : ''} onClick={() => setHub(h)}>
-              {h}
-            </button>
-          ))}
+        <span className="me-settings">
+          <span className="segmented mini" role="tablist" aria-label="내 성별">
+            {(['형', '언니'] as const).map((h) => (
+              <button key={h} role="tab" aria-selected={hub === h} className={hub === h ? 'active' : ''} onClick={() => setHub(h)}>
+                {h === '형' ? '남성' : '여성'}
+              </button>
+            ))}
+          </span>
+          <label className="me-age">
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={2}
+              placeholder="나이"
+              aria-label="내 나이 (선택)"
+              value={age ?? ''}
+              onChange={(e) => {
+                const n = Number(e.target.value.replace(/\D/g, ''));
+                setAge(e.target.value === '' ? null : Number.isInteger(n) && n > 0 ? n : age);
+              }}
+            />
+            <span>세</span>
+          </label>
         </span>
       </div>
 

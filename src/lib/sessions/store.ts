@@ -213,7 +213,7 @@ export function formatWhen(ts: number, now = Date.now()): string {
 
 /* ───── 새 세션에 넘길 맥락 조립 (§7.3) ───── */
 
-const EMPTY: ChatMemo = { situation: '모름', concern: '', partner: '', facts: [] };
+const EMPTY: ChatMemo = { situation: '모름', concern: '', partner: '', facts: [], pref: '' };
 
 /** 이전 상담에서 이어서: 부모 세션의 memo + "이전 상담 요약" 사실 한 줄 */
 export function memoForContinue(parent: Session): ChatMemo {

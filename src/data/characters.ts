@@ -1,4 +1,5 @@
-// 화면설계서 v0.3 §10 캐릭터표 기준. 페르소나(프롬프트용)는 src/lib/ai/personas.ts.
+// 화면설계서 v0.3 §10 캐릭터표 + 노션 캐릭터 페이지 2026-11-19 개정 기준. 페르소나(프롬프트용)는 src/lib/ai/personas.ts.
+// 상담 캐릭터는 실명으로 표시한다 (고정 나이 없음, 형·오빠·언니·누나 호칭은 사용자가 부를 때만).
 // 이미지: 노션 페르소나 자료(실사형, AI 생성) — 출시 전 초상권·실존 인물 유사성 검토 대상.
 import type { Screen } from '../App';
 import { PERSONAS, genderOfHub, personaName, type PersonaId } from '../lib/ai/personas';
@@ -8,7 +9,7 @@ export type Category = 'counsel' | 'kakao' | 'trait' | 'saju' | 'intro';
 export interface Character {
   id: string;
   name: string;
-  /** 성별 허브: 남성 사용자는 기훈형, 여성 사용자는 고은언니가 기본(즐겨찾기 고정·목록 맨 위). 다른 쪽도 목록에는 보인다 */
+  /** 성별 허브: 남성 사용자는 최기훈, 여성 사용자는 이고은이 기본(즐겨찾기 고정·목록 맨 위). 다른 쪽도 목록에는 보인다 */
   hubFor?: '형' | '언니';
   category: Category;
   roleLine: string; // 홈 목록 한 줄 소개 (1인칭)
@@ -53,11 +54,11 @@ export const CATEGORY_LABEL: Record<Category, string> = {
 export const CHARACTERS: Character[] = [
   {
     id: 'hub-m',
-    name: '기훈형',
+    name: '최기훈',
     hubFor: '형',
     category: 'counsel',
-    roleLine: '무슨 일인지 일단 얘기해봐',
-    tagline: '종합 연애 상담 · 갈등 조율 · 34세 ESFJ',
+    roleLine: '무슨 일인지 일단 얘기해 봐요',
+    tagline: '아는 형·오빠 · 갈등 조율 · 결혼한 선배 · ESFJ',
     does: ['고민을 끝까지 들어 주고 상황을 정리해 줘요', '이기는 법보다 관계를 풀고 상대 감정을 다치지 않게 하는 쪽으로 조언해요', '필요하면 맞는 캐릭터를 소개해 줘요'],
     when: ['뭐부터 물어봐야 할지 모를 때', '싸우고 나서 어떻게 풀지 막막할 때'],
     pricing: '무료 · 하루 15턴',
@@ -69,12 +70,12 @@ export const CHARACTERS: Character[] = [
   },
   {
     id: 'hub-f',
-    name: '고은언니',
+    name: '이고은',
     hubFor: '언니',
     category: 'counsel',
-    roleLine: '무슨 일인지 일단 얘기해봐',
-    tagline: '종합 연애 상담 · 현실적 전략 · 30세 ISFJ',
-    does: ['고민을 끝까지 들어 주고 상황을 정리해 줘요', '직설보다 우회적이고 전략적인 방법을 알려 줘요', '필요하면 맞는 캐릭터를 소개해 줘요'],
+    roleLine: '무슨 일인지 일단 얘기해 줘요',
+    tagline: '아는 언니·누나 · 현실적 전략 · 결혼 준비 중인 선배 · ISFJ',
+    does: ['고민을 끝까지 들어 주고 내 편에서 상황을 정리해 줘요', '직설보다 우회적이고 전략적인 방법을 알려 줘요', '연애뿐 아니라 직장·사람 사이 고민도 같이 봐 줘요'],
     when: ['뭐부터 물어봐야 할지 모를 때', '말은 하고 싶은데 싸우긴 싫을 때'],
     pricing: '무료 · 하루 15턴',
     image: 'hub-f',
@@ -85,13 +86,13 @@ export const CHARACTERS: Character[] = [
   },
   {
     id: 'soeun',
-    name: '소은누나',
+    name: '박소은',
     category: 'counsel',
-    roleLine: '여자 입장에서 솔직하게 볼게',
-    tagline: '여자 심리 · 사실 기반 직언 · 25세 ENTP',
-    does: ['여자 입장에서 상대의 말과 행동을 읽어 줘요', '네 해석과 실제 확인된 사실을 분리해서 짚어 줘요'],
-    when: ['연락이 줄어든 것 같을 때', '그 사람 속마음이 궁금할 때'],
-    pricing: '무료 하루 15턴 · 답장 분석 5크레딧',
+    roleLine: '잠깐, 그 전에는 어땠는데?',
+    tagline: '동갑 친구 · 질문으로 같이 뜯어보기 · ENTP',
+    does: ['빠른 리액션과 질문으로 상황을 같이 정리해요', '내 느낌과 실제로 확인된 사실을 나눠서 봐 줘요', '무조건 편들지 않고 지금 할 수 있는 행동을 짚어 줘요'],
+    when: ['내가 예민한 건지 헷갈릴 때', '상황을 객관적으로 보고 싶을 때'],
+    pricing: '무료 하루 15턴',
     image: 'soeun',
     emoji: '💁‍♀️',
     bg: 'var(--avatar-pink)',
@@ -100,13 +101,13 @@ export const CHARACTERS: Character[] = [
   },
   {
     id: 'seonghyun',
-    name: '성현이형',
+    name: '이성현',
     category: 'counsel',
-    roleLine: '남자 입장에서 행동을 짚어줄게',
-    tagline: '남자 심리 · 논리 기반 행동 코칭 · 27세 INTP',
-    does: ['남자 입장에서 상대 행동의 의미를 풀어 줘요', '관계 유지보다 너한테 이익이 되는 쪽으로 사실대로 말해 줘요'],
-    when: ['남자 마음을 모르겠을 때', '말보다 행동 조언이 필요할 때'],
-    pricing: '무료 하루 15턴 · 행동 플랜 5크레딧',
+    roleLine: '그래서 걔가 실제로 뭘 했는데?',
+    tagline: '동갑 친구 · 남자 입장 현실 점검 · INTP',
+    does: ['남자 입장에서 상대 행동의 가능한 이유를 풀어 줘요', '관계 유지보다 나한테 괜찮은 선택인지 같이 봐요', '연애 얘기가 아니어도 친구처럼 편하게 얘기해요'],
+    when: ['남자 마음을 모르겠을 때', '이 관계가 나한테 괜찮은지 헷갈릴 때'],
+    pricing: '무료 하루 15턴',
     image: 'seonghyun',
     emoji: '🤔',
     bg: 'var(--avatar-mint)',
@@ -210,7 +211,7 @@ export const CHARACTERS: Character[] = [
   },
 ];
 
-/** 이 사용자에게 보이는 캐릭터. 네 상담 캐릭터는 남녀 모두에게 보이고(노션: 아는형/오빠, 아는언니/누나), 성별 허브가 맨 위 */
+/** 이 사용자에게 보이는 캐릭터. 네 상담 캐릭터는 남녀 모두에게 보이고, 성별 허브가 맨 위 */
 export function visibleFor(hub: '형' | '언니', introOn: boolean): Character[] {
   const list = CHARACTERS.filter((c) => !c.flag || (c.flag === 'intro_tab' && introOn));
   return [...list.filter((c) => c.hubFor === hub), ...list.filter((c) => c.hubFor !== hub)];
@@ -220,7 +221,7 @@ export function hubOf(hub: '형' | '언니'): Character {
   return CHARACTERS.find((c) => c.hubFor === hub)!;
 }
 
-/** 사용자 성별에 따른 호칭: 기훈형/기훈오빠, 고은언니/고은누나, 성현이형/성현오빠, 소은누나/소은언니, 지현누나/지현언니 */
+/** 화면에 쓰는 이름. 상담 캐릭터는 실명(성별과 무관), 지현만 성별별 호칭이 남아 있다 */
 export function nameOf(c: Character, hub: '형' | '언니'): string {
   return c.persona ? personaName(PERSONAS[c.persona], genderOfHub(hub)) : c.name;
 }

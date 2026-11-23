@@ -7,7 +7,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes, randomInt } 
 import { TAROT_CARDS } from '../src/lib/ai/personas.js';
 import type { Env } from './llm.js';
 
-export const TAROT_PROMPT_VERSION = 'tarot-2026-11-16.2';
+export const TAROT_PROMPT_VERSION = 'tarot-2026-11-23.1';
 export const TAROT_REPLY_MAX = 320;
 export const DRAW_TTL_MS = 30 * 60 * 1000;
 
@@ -116,8 +116,11 @@ export const TAROT_SYSTEM = `너는 연애 앱 「모두의 연애」의 타로 
 - 같은 고민이 반복되거나 무거워 보이면, 마지막에 상담 캐릭터와 이야기해 보는 것을 한 문장으로 권할 수 있다.
 
 # 8. 안전
-- 자해·자살 암시, 폭력·협박, 스토킹, 성적 강요, 임신 관련 위기, 금전 착취가 보이면 타로 해석을 하지 않는다.
-- status를 "safety"로 하고, 걱정하는 마음을 짧게 전한 뒤 지금 안전한지 묻는다. 연락처는 화면이 띄우므로 직접 나열하지 않아도 된다.
+- 이별, 외모 비하, 서운함이나 슬픔만으로 긴급 위험이라고 판단하지 않는다. 평소 캐릭터답게 공감하고 status를 "reading"으로 해석한다.
+- 자해·자살 의사나 암시, 타인을 해치겠다는 표현, 폭력·협박, 스토킹, 성적 강요, 강압적 통제, 임신 관련 위기, 금전 착취 등 위험이 보이면 타로 해석을 중단하고 status를 "safety"로 한다. 걱정하는 마음을 짧게 전하고 지금 안전한지, 당장 위험이 있는지를 확인한다. 타해 의사에는 상대와 거리를 두고 위험한 물건을 내려놓도록 권한다.
+- 단어 하나만이 아니라 주체, 대상, 과거와 현재, 부정·인용 여부와 대화 맥락을 고려하고 모호하면 짧게 확인한다.
+- 전화번호나 기관 이름은 직접 쓰지 않는다. 화면이 위험의 종류에 맞는 도움 안내를 따로 보여 준다. 실제 전화가 자동으로 연결된 것처럼 말하지 않는다.
+- status가 "safety"이면 safety_type에 위험의 종류를 적는다: 사용자 본인이나 상대의 자해·자살 위험은 "self_harm", 사용자가 누군가를 해치려는 의사는 "harm_others", 사용자가 폭력·협박·스토킹·강요를 당하는 상황은 "violence", 그 밖의 위기는 "other". safety가 아니면 "none".
 - 상대를 몰래 추적·감시하거나 보복하는 방법은 어떤 형식으로도 제안하지 않는다.
 
 # 9. 말투
@@ -128,17 +131,18 @@ export const TAROT_SYSTEM = `너는 연애 앱 「모두의 연애」의 타로 
 
 # 10. 출력 형식
 반드시 아래 JSON 하나만 출력한다. JSON 밖에 다른 글을 쓰지 않는다.
-{"status": "reading" | "need_question" | "out_of_scope" | "safety", "card": "<draw>의 card 값 그대로", "orientation": "<draw>의 orientation 값 그대로", "reply": "사용자에게 보일 문장"}
+{"status": "reading" | "need_question" | "out_of_scope" | "safety", "card": "<draw>의 card 값 그대로", "orientation": "<draw>의 orientation 값 그대로", "safety_type": "none" | "self_harm" | "harm_others" | "violence" | "other", "reply": "사용자에게 보일 문장"}
 - status가 reading이 아니면 card와 orientation은 빈 문자열로 둔다.`;
 
 export const tarotSchema = {
   type: 'object',
   additionalProperties: false,
-  required: ['status', 'card', 'orientation', 'reply'],
+  required: ['status', 'card', 'orientation', 'safety_type', 'reply'],
   properties: {
     status: { type: 'string', enum: ['reading', 'need_question', 'out_of_scope', 'safety'] },
     card: { type: 'string', description: '<draw> 의 card 값 그대로. reading 이 아니면 빈 문자열' },
     orientation: { type: 'string', enum: ['정방향', '역방향', ''] },
+    safety_type: { type: 'string', enum: ['none', 'self_harm', 'harm_others', 'violence', 'other'], description: 'status 가 safety 일 때 위험의 종류, 아니면 none' },
     reply: { type: 'string', description: `사용자에게 보일 문장. 3~5문장, ${TAROT_REPLY_MAX}자 이내` },
   },
 } as const;
@@ -237,5 +241,3 @@ export const CANNED = {
   empty: '어서 와요. 궁금한 연애 고민을 질문 하나로 말해 주면 카드 한 장으로 같이 볼게요.',
   expired: '카드를 고른 지 시간이 좀 지났어요. 질문을 다시 보내 주면 새로 뽑아 볼게요.',
 } as const;
-
-export const SAFETY_LINES = '· 자살예방상담전화 109 (24시간)\n· 여성긴급전화 1366 (24시간)\n· 위험이 급하면 112 또는 119';

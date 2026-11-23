@@ -2530,3 +2530,55 @@ input[type='file'] {
 .advanced-lead {
   margin: 8px 0 0;
 }
+
+/* ── 사용자 설정(성별·나이) · 도움 안내 카드 (2026-11-23 캐릭터 개정) ── */
+.me-settings {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex: none;
+}
+.me-age {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+.me-age input {
+  width: 52px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  font-size: 13px;
+  text-align: center;
+  color: var(--text);
+}
+.help-card {
+  align-self: flex-start;
+  max-width: 86%;
+  margin: 8px 0 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--warn-bg);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.help-card strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.help-card ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.help-card li::before {
+  content: '· ';
+}
