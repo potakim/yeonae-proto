@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { tarotImage, type TarotDraw } from '../lib/tarot';
 
 /**
@@ -113,25 +113,55 @@ export function TarotPick({ reveal, onPick }: { reveal: () => Promise<TarotDraw>
   );
 }
 
-/** 답변 대기 중 수정구 (3차 리뷰: 3~5초 대기 시간의 몰입감) */
+/**
+ * 답변 대기 중 수정구 (3차 리뷰: 3~5초 대기 시간의 몰입감).
+ * 수정구를 누르거나 문지르면 그 자리에 분홍빛이 번졌다가 천천히 사라진다 (리뷰 추가안 "수정구와 상호작용").
+ */
 export function CrystalBall() {
+  const [spots, setSpots] = useState<{ id: number; x: number; y: number }[]>([]);
+  const last = useRef(0);
+  const seq = useRef(0);
+  const timers = useRef<number[]>([]);
+  useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
+  const touch = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.type === 'pointermove' && e.pointerType === 'mouse' && e.buttons === 0) return; // 마우스는 누른 채 움직일 때만
+    const now = performance.now();
+    if (now - last.current < 70) return;
+    last.current = now;
+    const r = e.currentTarget.getBoundingClientRect();
+    const id = ++seq.current;
+    const x = ((e.clientX - r.left) / r.width) * 100;
+    const y = ((e.clientY - r.top) / r.height) * 100;
+    setSpots((cur) => [...cur.slice(-11), { id, x, y }]);
+    timers.current.push(window.setTimeout(() => setSpots((cur) => cur.filter((s) => s.id !== id)), 2600));
+  };
   return (
     <div className="crystal" role="status" aria-live="polite">
-      <div className="crystal-orb" aria-hidden>
-        <span className="crystal-glow" />
-        <span className="crystal-ball" />
-        <span className="crystal-spark s1">✦</span>
-        <span className="crystal-spark s2">✦</span>
-        <span className="crystal-spark s3">✧</span>
-        <span className="crystal-base" />
+      <div className="crystal-orb">
+        <span className="crystal-glow" aria-hidden />
+        <div className={`crystal-ball${spots.length ? ' touched' : ''}`} onPointerDown={touch} onPointerMove={touch} aria-hidden>
+          {spots.map((s) => (
+            <span key={s.id} className="crystal-spot" style={{ left: `${s.x}%`, top: `${s.y}%` }} />
+          ))}
+        </div>
+        <span className="crystal-spark s1" aria-hidden>
+          ✦
+        </span>
+        <span className="crystal-spark s2" aria-hidden>
+          ✦
+        </span>
+        <span className="crystal-spark s3" aria-hidden>
+          ✧
+        </span>
+        <span className="crystal-base" aria-hidden />
       </div>
-      <p className="crystal-text">수정구에 카드의 기운을 비추는 중…</p>
+      <p className="crystal-text">수정구가 당신과 그 사람의 마음을 읽어내고 있어요…</p>
       <span className="crystal-dots" aria-hidden>
         <i />
         <i />
         <i />
       </span>
-      <p className="crystal-sub">보통 3~5초 걸려요</p>
+      <p className="crystal-sub">수정구를 문지르면 분홍빛이 머물러요</p>
     </div>
   );
 }

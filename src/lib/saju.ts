@@ -33,24 +33,7 @@ import {
 import { toTrueSolarTime } from './vendor/korea-time.js';
 
 /** 출생지 경도 프리셋 (동경, 시청 기준 근사값) */
-export const BIRTH_PLACES: { name: string; longitude: number | null }[] = [
-  { name: '서울', longitude: 126.978 },
-  { name: '인천', longitude: 126.705 },
-  { name: '수원·경기 남부', longitude: 127.029 },
-  { name: '춘천', longitude: 127.73 },
-  { name: '강릉', longitude: 128.876 },
-  { name: '대전', longitude: 127.385 },
-  { name: '청주', longitude: 127.489 },
-  { name: '전주', longitude: 127.148 },
-  { name: '광주', longitude: 126.852 },
-  { name: '대구', longitude: 128.601 },
-  { name: '포항', longitude: 129.343 },
-  { name: '울산', longitude: 129.311 },
-  { name: '부산', longitude: 129.075 },
-  { name: '창원', longitude: 128.681 },
-  { name: '제주', longitude: 126.531 },
-  { name: '모름 (한반도 평균 127.5°)', longitude: null },
-];
+// 태어난 곳 선택지는 src/data/regions.ts (시·도 → 시·군·구)
 
 /**
  * 시주 시간 기준 (verify/REPORT.md '한국 기준 2차 점검')
@@ -73,28 +56,28 @@ export const DEFAULT_JASI_RULE: JasiRule = 'jasi';
 
 export const TIME_STANDARD_INFO: Record<TimeStandard, { label: string; chip: string; desc: string; withParticle: string }> = {
   korea: {
-    label: '한국 표준 보정 (기본)',
+    label: '한국에서 흔히 쓰는 기준 (기본 · 추천)',
     chip: '한국 표준 보정(동경 127.5°)',
     withParticle: '한국 표준 보정으로',
-    desc: '시계에서 30분을 빼서 봐요. 국내 만세력에서 가장 많이 쓰는 방식이에요. 자시 23:30~01:29',
+    desc: '태어난 시각에서 약 30분을 빼고 계산해요. 특별히 따르는 기준이 없다면 이 설정을 선택하세요.',
   },
   trueSolar: {
-    label: '진태양시 (정밀)',
+    label: '태어난 곳의 태양 시간 기준',
     chip: '진태양시(출생지 경도·균시차)',
     withParticle: '진태양시로',
-    desc: '태어난 곳의 경도와 그날의 태양 위치까지 반영해요. 다른 앱과 시주가 다르게 나올 수 있어요.',
+    desc: '태어난 지역과 날짜에 따른 태양의 위치를 반영해요. 이 기준을 사용하는 풀이와 비교할 때 선택하세요.',
   },
   none: {
-    label: '보정 없음',
+    label: '시간 보정 없이 계산',
     chip: '보정 없음(시계 그대로)',
     withParticle: '보정 없음으로',
-    desc: '시계 시각 그대로 봐요. 자시 23:00~00:59',
+    desc: '태어난 시각에 지역이나 태양 위치에 따른 보정을 하지 않아요. 다른 만세력에서 보정 없이 계산한 결과와 비교할 때 선택하세요.',
   },
 };
 
 export const JASI_RULE_INFO: Record<JasiRule, { label: string; desc: string; ifApplied: string }> = {
-  jasi: { label: '다음날로 보기 (기본)', desc: '자시가 시작되면 일주·시주 모두 다음날로 봐요', ifApplied: '다음날로 보면' },
-  splitJasi: { label: '야자시 적용', desc: '자정 전까지는 일주는 당일, 시주만 다음날로 봐요', ifApplied: '야자시를 적용하면' },
+  jasi: { label: '자시부터 다음 날로 보기 (기본 · 추천)', desc: '자시가 시작되면 일주와 시주를 모두 다음 날 기준으로 계산해요. 특별히 따르는 기준이 없다면 이 설정을 선택하세요.', ifApplied: '다음날로 보면' },
+  splitJasi: { label: '일주는 자정부터 다음 날로 보기 (야자시)', desc: '자시가 시작된 뒤 자정 전까지는 일주는 당일, 시주는 다음 날 기준으로 계산해요. 야자시를 따르는 풀이와 비교할 때 선택하세요.', ifApplied: '야자시를 적용하면' },
 };
 
 export interface SajuInput {

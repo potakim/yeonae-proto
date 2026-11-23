@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import FortunePanel from '../components/FortunePanel';
+import BirthPlaceSelect from '../components/BirthPlaceSelect';
+import { DEFAULT_PLACE, longitudeOf, type BirthPlace } from '../data/regions';
 import type { FiveElement, Gender } from 'manseryeok';
 import {
-  BIRTH_PLACES,
   DEFAULT_JASI_RULE,
   DEFAULT_TIME_STANDARD,
   JASI_RULE_INFO,
@@ -43,7 +44,7 @@ export default function SajuPage({ onSaved }: { onSaved?: (input: SajuInput) => 
   const [isLunar, setIsLunar] = useState(false);
   const [isLeapMonth, setIsLeapMonth] = useState(false);
   const [gender, setGender] = useState<Gender>('female');
-  const [placeIdx, setPlaceIdx] = useState(0);
+  const [place, setPlace] = useState<BirthPlace>(DEFAULT_PLACE);
   const [timeStandard, setTimeStandard] = useState<TimeStandard>(DEFAULT_TIME_STANDARD);
   const [dayBoundary, setDayBoundary] = useState<JasiRule>(DEFAULT_JASI_RULE);
 
@@ -68,7 +69,7 @@ export default function SajuPage({ onSaved }: { onSaved?: (input: SajuInput) => 
       isLunar,
       isLeapMonth,
       gender,
-      longitude: BIRTH_PLACES[placeIdx].longitude,
+      longitude: longitudeOf(place),
       timeStandard,
       dayBoundary,
     };
@@ -159,23 +160,15 @@ export default function SajuPage({ onSaved }: { onSaved?: (input: SajuInput) => 
           </div>
         </div>
 
-        <div className="field">
-          <label>태어난 곳</label>
-          <select value={placeIdx} onChange={(e) => setPlaceIdx(Number(e.target.value))}>
-            {BIRTH_PLACES.map((p, i) => (
-              <option key={p.name} value={i}>
-                {p.name}
-                {p.longitude ? ` (${p.longitude}°E)` : ''}
-              </option>
-            ))}
-          </select>
-          {timeStandard === 'trueSolar' && <p className="hint">진태양시는 이 경도로 계산해요.</p>}
-        </div>
+        <BirthPlaceSelect value={place} onChange={setPlace} />
 
         <details className="advanced">
-          <summary>고급 설정 (관법)</summary>
+          <summary>고급 설정</summary>
+          <p className="hint advanced-lead">
+            어떤 기준을 선택해야 할지 모르겠다면 기본값을 그대로 사용하세요. 다른 만세력이나 상담 결과와 비교할 때만 기준을 바꿔보면 됩니다.
+          </p>
           <div className="field">
-            <label>시주 시간 기준</label>
+            <label>태어난 시간을 계산하는 기준</label>
             <div className="radio-list">
               {TIME_STANDARD_OPTIONS.map((o) => (
                 <label key={o.value} className="radio">
@@ -186,18 +179,20 @@ export default function SajuPage({ onSaved }: { onSaved?: (input: SajuInput) => 
                     onChange={() => setTimeStandard(o.value)}
                   />
                   <span>
-                    <strong>{o.label}</strong> · {o.desc}
+                    <strong>{o.label}</strong>
+                    <small>{o.desc}</small>
                   </span>
                 </label>
               ))}
             </div>
-            <p className="hint">
-              한국 표준시는 동경 135° 기준이라 실제 태양보다 약 30분 빨라요. 서머타임(1948~51, 1955~60, 1987~88)과
-              1954~61년 표준시는 어떤 기준이든 자동으로 반영해요.
-            </p>
+            <p className="hint">선택한 기준에 따라 시주가 달라질 수 있어요. 과거에 적용된 표준시와 서머타임은 자동으로 반영합니다.</p>
           </div>
           <div className="field">
-            <label>자시(밤 {timeStandard === 'none' ? '11시' : '11시 30분'} 이후) 출생</label>
+            <label>밤늦게 태어난 경우, 날짜를 바꾸는 기준</label>
+            <p className="hint">
+              자시가 시작된 뒤부터 자정 전에 태어났다면, 날짜를 언제 바꿀지에 따라 사주 결과가 달라질 수 있어요. 자시가 시작되는 시각은 위에서 선택한 시간
+              기준에 따라 달라져요.
+            </p>
             <div className="radio-list">
               {JASI_RULE_OPTIONS.map((o) => (
                 <label key={o.value} className="radio">
@@ -208,7 +203,8 @@ export default function SajuPage({ onSaved }: { onSaved?: (input: SajuInput) => 
                     onChange={() => setDayBoundary(o.value)}
                   />
                   <span>
-                    <strong>{o.label}</strong> · {o.desc}
+                    <strong>{o.label}</strong>
+                    <small>{o.desc}</small>
                   </span>
                 </label>
               ))}

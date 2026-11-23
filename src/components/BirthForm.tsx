@@ -1,4 +1,7 @@
-import { BIRTH_PLACES, type SajuInput } from '../lib/saju';
+import { useState } from 'react';
+import type { SajuInput } from '../lib/saju';
+import BirthPlaceSelect from './BirthPlaceSelect';
+import { longitudeOf, placeOfLongitude, type BirthPlace } from '../data/regions';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5);
@@ -7,7 +10,8 @@ const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5);
 export default function BirthForm({ value, onChange, idPrefix }: { value: SajuInput; onChange: (v: SajuInput) => void; idPrefix: string }) {
   const set = (patch: Partial<SajuInput>) => onChange({ ...value, ...patch });
   const num = (s: string) => (s === '' ? 0 : Number(s.replace(/\D/g, '')));
-  const placeIdx = Math.max(0, BIRTH_PLACES.findIndex((p) => p.longitude === value.longitude));
+  // 폼 값은 경도만 들고 있으므로 고른 시·군·구 이름은 여기서 기억한다
+  const [place, setPlace] = useState<BirthPlace>(() => placeOfLongitude(value.longitude));
 
   return (
     <div className="form">
@@ -63,12 +67,14 @@ export default function BirthForm({ value, onChange, idPrefix }: { value: SajuIn
           <button className={value.gender === 'male' ? 'active' : ''} onClick={() => set({ gender: 'male' })}>남성</button>
         </div>
       </div>
-      <div className="field">
-        <label>태어난 곳</label>
-        <select value={placeIdx} onChange={(e) => set({ longitude: BIRTH_PLACES[Number(e.target.value)].longitude })}>
-          {BIRTH_PLACES.map((p, i) => <option key={p.name} value={i}>{p.name}</option>)}
-        </select>
-      </div>
+      <BirthPlaceSelect
+        value={place}
+        hint={false}
+        onChange={(p) => {
+          setPlace(p);
+          set({ longitude: longitudeOf(p) });
+        }}
+      />
     </div>
   );
 }
