@@ -130,6 +130,22 @@ export const CHARACTERS: Character[] = [
     placeholder: true,
   },
   {
+    // 노션 「탐정 캐릭터(카톡 대화 심층 분석)」 2026-11-23 — 이름·외형·말투·무료/유료 범위는 미정
+    id: 'detective',
+    name: '탐정',
+    category: 'kakao',
+    roleLine: '기록에 있는 것만 셀게. 숫자로 보여줄게',
+    tagline: '카톡 대화 기록 리포트 · 선톡 · 답장 시간 · 기간별 변화 (임시명)',
+    does: ['누가 먼저 대화를 시작했는지, 답장까지 얼마나 걸렸는지 같은 기준으로 세어 비교해요', '기간을 나눠 대화량과 답장 시간이 어떻게 달라졌는지 보여 줘요', '숫자와 함께 집계 기준과 표본 수를 알려 주고, 속마음은 판정하지 않아요'],
+    when: ['내가 늘 먼저 연락했나 궁금할 때', '요즘 대화가 줄었는지 기록으로 확인하고 싶을 때'],
+    pricing: '추후 안내 · 대화 내용은 기기 안에서만 계산',
+    emoji: '🕵️',
+    bg: 'var(--avatar-mint)',
+    isNew: true,
+    screen: 'detective',
+    placeholder: true,
+  },
+  {
     id: 'teacher',
     name: '선생님',
     category: 'trait',

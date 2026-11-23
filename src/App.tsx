@@ -5,6 +5,7 @@ import PersonalityPage from './pages/PersonalityPage';
 import ChatPage from './pages/ChatPage';
 import CompatPage from './pages/CompatPage';
 import KakaoPage from './pages/KakaoPage';
+import DetectivePage from './pages/DetectivePage';
 import CharacterProfile from './pages/CharacterProfile';
 import { IntroTab, MyTab, TalkTab } from './pages/TabStubs';
 import BottomTab, { type Tab } from './components/BottomTab';
@@ -17,7 +18,7 @@ import SessionSheet from './components/SessionSheet';
 import AnalysesSheet from './components/AnalysesSheet';
 import { validAge } from './lib/ai/personas';
 
-export type Screen = 'home' | 'saju' | 'personality' | 'chat' | 'compat' | 'kakao';
+export type Screen = 'home' | 'saju' | 'personality' | 'chat' | 'compat' | 'kakao' | 'detective';
 export type HubCharacter = '형' | '언니';
 
 export default function App() {
@@ -141,6 +142,7 @@ function Shell() {
         )}
         {screen === 'compat' && <CompatPage mySaju={mySaju} myType={myType} />}
         {screen === 'kakao' && <KakaoPage />}
+        {screen === 'detective' && <DetectivePage />}
       </main>
       {inTabRoot && <BottomTab active={tab} onChange={setTab} />}
       {profile && (

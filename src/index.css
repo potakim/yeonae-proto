@@ -2582,3 +2582,172 @@ input[type='file'] {
 .help-card li::before {
   content: '· ';
 }
+
+/* ── 탐정: 대화 기록 리포트 (2026-11-23) ── */
+.scope-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.scope-list dt {
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.scope-list dd {
+  margin: 0;
+  color: var(--text);
+}
+.detective .sub-title {
+  margin: 18px 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.detective .stat-line {
+  margin: 6px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+.detective .card.bubble p + p {
+  margin-top: 6px;
+}
+.pair-table td {
+  vertical-align: top;
+  line-height: 1.45;
+}
+.pair-table td:first-child {
+  width: 38%;
+}
+.share-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--soft-violet);
+  overflow: hidden;
+  margin: 2px 0 10px;
+}
+.share-bar span {
+  display: block;
+  height: 100%;
+  background: var(--brand-pink);
+  border-radius: 999px 0 0 999px;
+}
+.bucket-row {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+  gap: 2px 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.bucket-who {
+  color: var(--text-2);
+  font-weight: 600;
+}
+.bucket-bar {
+  display: flex;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  gap: 2px;
+}
+.bucket-bar i {
+  display: block;
+  min-width: 4px;
+  flex-basis: 0;
+}
+.bucket-bar .b0 {
+  background: var(--brand-pink);
+}
+.bucket-bar .b1 {
+  background: #b99bff;
+}
+.bucket-bar .b2 {
+  background: #d9d3e8;
+}
+.bucket-nums {
+  grid-column: 2;
+  color: var(--text-3);
+  font-size: 12px;
+}
+.criteria,
+.detail-block {
+  font-size: 13px;
+}
+.criteria {
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.criteria summary {
+  cursor: pointer;
+  color: var(--text-3);
+  font-weight: 600;
+}
+.criteria ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+.detail-block > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.detail-block > summary::-webkit-details-marker {
+  display: none;
+}
+.detail-block > summary::after {
+  content: '펼치기 ⌄';
+  font-size: 13px;
+  color: var(--text-3);
+}
+.detail-block[open] > summary::after {
+  content: '접기 ⌃';
+}
+.detail-block > summary .card-title {
+  margin: 0;
+}
+.week-scroll {
+  overflow-x: auto;
+}
+.week-table {
+  min-width: 320px;
+  font-size: 12.5px;
+}
+.week-table th {
+  font-weight: 600;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.week-table td:first-child {
+  white-space: nowrap;
+}
+.partial {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--text-3);
+}
+.heat {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-size: 12px;
+  text-align: center;
+}
+.heat th {
+  font-weight: 500;
+  color: var(--text-3);
+}
+.heat td {
+  padding: 6px 0;
+  border-radius: 6px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--brand-pink) calc(var(--v) * 70%), var(--soft-violet));
+}

@@ -16,7 +16,10 @@ export interface RawMessage {
   speaker: string; // 이름 (system 이면 '')
   text: string;
   system?: boolean;
+  /** keepMedia 옵션으로 파싱했을 때만: 글이 아닌 메시지의 종류 (탐정 리포트의 사진·이모티콘 집계, 제외 항목 표시용) */
+  kind?: MediaKind;
 }
+export type MediaKind = 'photo' | 'video' | 'emoticon' | 'file' | 'call' | 'deleted';
 
 export interface ParsedChat {
   messages: RawMessage[];
@@ -51,8 +54,20 @@ const RE_DATE_IOS = /^(\d{4})\. (\d{1,2})\. (\d{1,2})\. [월화수목금토일]�
 // 시스템 문구
 const RE_SYSTEM = /(님이 들어왔습니다|님이 나갔습니다|님을 초대했습니다|채팅방 관리자가|카카오톡 대화$|저장한 날짜 :)/;
 const SKIP_TEXT = new Set(['사진', '동영상', '이모티콘', '삭제된 메시지입니다.', '(파일)', '보이스톡 해요', '페이스톡 해요']);
+/** 글이 아닌 메시지 판별 — 내보내기 파일에 종류가 글자로 적혀 있는 것만 구분한다 */
+export function mediaKindOf(text: string): MediaKind | null {
+  const t = text.trim();
+  if (/^사진( \d+장)?$/.test(t)) return 'photo';
+  if (t === '동영상') return 'video';
+  if (t === '이모티콘' || t === '(이모티콘)') return 'emoticon';
+  if (t === '삭제된 메시지입니다.') return 'deleted';
+  if (t === '(파일)' || /^파일: /.test(t)) return 'file';
+  if (/^(보이스톡|페이스톡)( 해요| \d+:\d+| 취소| 부재중)?/.test(t)) return 'call';
+  return null;
+}
 
-export function parseKakaoExport(raw: string): ParsedChat {
+export function parseKakaoExport(raw: string, opts: { keepMedia?: boolean } = {}): ParsedChat {
+  const keep = opts.keepMedia === true;
   const lines = raw.replace(/\r\n?/g, '\n').split('\n');
   const messages: RawMessage[] = [];
   let date = '';
@@ -73,12 +88,12 @@ export function parseKakaoExport(raw: string): ParsedChat {
     if ((m = line.match(RE_ANDROID)) || (m = line.match(RE_IOS))) {
       format = format === 'unknown' ? (line.includes('년') ? 'android' : 'ios') : format;
       date = ymd(m[1], m[2], m[3]);
-      last = push(messages, { date, time: toHHMM(m[4], m[5], m[6]), speaker: m[7].trim(), text: m[8] });
+      last = push(messages, { date, time: toHHMM(m[4], m[5], m[6]), speaker: m[7].trim(), text: m[8] }, keep);
       continue;
     }
     if ((m = line.match(RE_PC))) {
       format = format === 'unknown' ? 'pc' : format;
-      last = push(messages, { date, time: toHHMM(m[2], m[3], m[4]), speaker: m[1].trim(), text: m[5] });
+      last = push(messages, { date, time: toHHMM(m[2], m[3], m[4]), speaker: m[1].trim(), text: m[5] }, keep);
       continue;
     }
     if (RE_SYSTEM.test(line)) continue;
@@ -93,7 +108,14 @@ export function parseKakaoExport(raw: string): ParsedChat {
   return { messages, participants, firstDate: dated[0]?.date ?? null, lastDate: dated[dated.length - 1]?.date ?? null, format };
 }
 
-function push(list: RawMessage[], m: RawMessage): RawMessage | null {
+function push(list: RawMessage[], m: RawMessage, keepMedia = false): RawMessage | null {
+  if (keepMedia) {
+    const kind = mediaKindOf(m.text);
+    if (kind) {
+      list.push({ ...m, kind });
+      return null; // 글이 아닌 메시지에는 다음 줄을 이어 붙이지 않는다
+    }
+  }
   if (SKIP_TEXT.has(m.text.trim())) return null;
   if (RE_SYSTEM.test(m.text)) return null;
   list.push(m);

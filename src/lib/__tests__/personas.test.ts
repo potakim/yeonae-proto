@@ -198,3 +198,15 @@ describe('채팅 프롬프트 — 캐릭터별 형식·범위·사용자 설정'
     expect(s).toContain('캐릭터 자신의 짧은 경험담');
   });
 });
+
+describe('탐정 캐릭터', () => {
+  it('카톡 분석 섹션에 여사친과 함께 보이고, 전용 화면으로 간다', () => {
+    const d = byId('detective')!;
+    expect(d.category).toBe('kakao');
+    expect(d.screen).toBe('detective');
+    expect(byId('yeosachin')!.screen).toBe('kakao'); // 여사친은 그대로
+    const ids = visibleFor('형', false).map((c) => c.id);
+    expect(ids).toContain('detective');
+    expect(ids).toContain('yeosachin');
+  });
+});
