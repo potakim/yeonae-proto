@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import FortunePanel from '../components/FortunePanel';
 import BirthPlaceSelect from '../components/BirthPlaceSelect';
 import { DEFAULT_PLACE, longitudeOf, type BirthPlace } from '../data/regions';
+import type { StoredBirth } from '../lib/birth-store';
+import type { Evidence } from '../lib/ai/saju-chat';
 import type { FiveElement, Gender } from 'manseryeok';
 import {
   DEFAULT_JASI_RULE,
@@ -34,21 +36,49 @@ const JASI_RULE_OPTIONS = (['jasi', 'splitJasi'] as const).map((value) => ({ val
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5);
 
-export default function SajuPage({ onSaved }: { onSaved?: (input: SajuInput) => void }) {
-  const [year, setYear] = useState('1995');
-  const [month, setMonth] = useState('3');
-  const [day, setDay] = useState('15');
-  const [hour, setHour] = useState(14);
-  const [minute, setMinute] = useState(30);
-  const [hourUnknown, setHourUnknown] = useState(false);
-  const [isLunar, setIsLunar] = useState(false);
-  const [isLeapMonth, setIsLeapMonth] = useState(false);
-  const [gender, setGender] = useState<Gender>('female');
-  const [place, setPlace] = useState<BirthPlace>(DEFAULT_PLACE);
-  const [timeStandard, setTimeStandard] = useState<TimeStandard>(DEFAULT_TIME_STANDARD);
-  const [dayBoundary, setDayBoundary] = useState<JasiRule>(DEFAULT_JASI_RULE);
+const calcOrNull = (input: SajuInput | undefined): SajuResult | null => {
+  if (!input) return null;
+  try {
+    return calculateSaju(input);
+  } catch {
+    return null;
+  }
+};
 
-  const [result, setResult] = useState<SajuResult | null>(null);
+export default function SajuPage({
+  initial = null,
+  onSaved,
+  onClear,
+  onAskSeohwa,
+  usedEvidence = [],
+}: {
+  /** 이 기기에 저장된 출생 정보 — 있으면 폼을 접고 결과부터 보여 준다 */
+  initial?: StoredBirth | null;
+  onSaved?: (input: SajuInput, place: BirthPlace) => void;
+  /** 저장된 출생 정보 지우기 */
+  onClear?: () => void;
+  /** 「서화에게 내 사주 풀어보기」 — 채팅 탭으로 */
+  onAskSeohwa?: () => void;
+  /** 서화가 최근 풀이에 쓴 근거 (채팅 탭에서 넘어온 값) */
+  usedEvidence?: Evidence[];
+}) {
+  const i0 = initial?.input;
+  const [year, setYear] = useState(String(i0?.year ?? 1995));
+  const [month, setMonth] = useState(String(i0?.month ?? 3));
+  const [day, setDay] = useState(String(i0?.day ?? 15));
+  const [hour, setHour] = useState(i0?.hour ?? 14);
+  const [minute, setMinute] = useState(i0 ? Math.floor((i0.minute ?? 0) / 5) * 5 : 30);
+  const [hourUnknown, setHourUnknown] = useState(i0 ? i0.hour === null : false);
+  const [isLunar, setIsLunar] = useState(i0?.isLunar ?? false);
+  const [isLeapMonth, setIsLeapMonth] = useState(i0?.isLeapMonth ?? false);
+  const [gender, setGender] = useState<Gender>(i0?.gender ?? 'female');
+  const [place, setPlace] = useState<BirthPlace>(initial?.place ?? DEFAULT_PLACE);
+  const [timeStandard, setTimeStandard] = useState<TimeStandard>(i0?.timeStandard ?? DEFAULT_TIME_STANDARD);
+  const [dayBoundary, setDayBoundary] = useState<JasiRule>(i0?.dayBoundary === 'splitJasi' ? 'splitJasi' : DEFAULT_JASI_RULE);
+  // 저장된 정보가 있으면 폼은 접어 두고 결과부터
+  const [editing, setEditing] = useState(!initial);
+
+  const [result, setResult] = useState<SajuResult | null>(() => calcOrNull(i0));
   const [error, setError] = useState<string | null>(null);
 
   const submit = () => {
@@ -75,7 +105,8 @@ export default function SajuPage({ onSaved }: { onSaved?: (input: SajuInput) => 
     };
     try {
       setResult(calculateSaju(input));
-      onSaved?.(input);
+      onSaved?.(input, place);
+      setEditing(false);
       setTimeout(() => document.getElementById('saju-result')?.scrollIntoView({ behavior: 'smooth' }), 50);
     } catch (e) {
       setResult(null);
@@ -87,138 +118,190 @@ export default function SajuPage({ onSaved }: { onSaved?: (input: SajuInput) => 
     <div className="stack">
       <h2 className="page-title">만세력 · 사주 원국</h2>
 
-      <section className="card form">
-        <div className="field">
-          <label>달력</label>
-          <div className="segmented">
-            <button className={!isLunar ? 'active' : ''} onClick={() => setIsLunar(false)}>
-              양력
+      {result && !editing && (
+        <section className="card birth-saved">
+          <div>
+            <strong>내 출생 정보</strong>
+            <span>
+              {result.input.isLunar ? '음력' : '양력'} {result.input.year}.{result.input.month}.{result.input.day}
+              {result.hourKnown ? ` ${String(result.input.hour).padStart(2, '0')}:${String(result.input.minute).padStart(2, '0')}` : ' · 시간 모름'} · {result.input.gender === 'female' ? '여성' : '남성'}
+            </span>
+            <small>이 기기에만 저장돼요.</small>
+          </div>
+          <div className="birth-saved-actions">
+            <button className="btn-text" onClick={() => setEditing(true)}>
+              수정
             </button>
-            <button className={isLunar ? 'active' : ''} onClick={() => setIsLunar(true)}>
-              음력
-            </button>
+            {onClear && (
+              <button
+                className="btn-text"
+                onClick={() => {
+                  onClear();
+                  setResult(null);
+                  setEditing(true);
+                }}
+              >
+                지우기
+              </button>
+            )}
           </div>
-          {isLunar && (
-            <label className="check">
-              <input type="checkbox" checked={isLeapMonth} onChange={(e) => setIsLeapMonth(e.target.checked)} />
-              윤달이에요
-            </label>
-          )}
-        </div>
-
-        <div className="field">
-          <label>생년월일</label>
-          <div className="row3">
-            <div className="suffix-input">
-              <input inputMode="numeric" value={year} onChange={(e) => setYear(e.target.value)} aria-label="년" />
-              <span>년</span>
-            </div>
-            <div className="suffix-input">
-              <input inputMode="numeric" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="월" />
-              <span>월</span>
-            </div>
-            <div className="suffix-input">
-              <input inputMode="numeric" value={day} onChange={(e) => setDay(e.target.value)} aria-label="일" />
-              <span>일</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="field">
-          <label>태어난 시간</label>
-          <div className="row2">
-            <select value={hour} disabled={hourUnknown} onChange={(e) => setHour(Number(e.target.value))} aria-label="시">
-              {HOURS.map((h) => (
-                <option key={h} value={h}>
-                  {String(h).padStart(2, '0')}시
-                </option>
-              ))}
-            </select>
-            <select value={minute} disabled={hourUnknown} onChange={(e) => setMinute(Number(e.target.value))} aria-label="분">
-              {MINUTES.map((m) => (
-                <option key={m} value={m}>
-                  {String(m).padStart(2, '0')}분
-                </option>
-              ))}
-            </select>
-          </div>
-          <label className="check">
-            <input type="checkbox" checked={hourUnknown} onChange={(e) => setHourUnknown(e.target.checked)} />
-            시간을 몰라요
-          </label>
-        </div>
-
-        <div className="field">
-          <label>성별 (대운 계산에 필요해요)</label>
-          <div className="segmented">
-            <button className={gender === 'female' ? 'active' : ''} onClick={() => setGender('female')}>
-              여성
-            </button>
-            <button className={gender === 'male' ? 'active' : ''} onClick={() => setGender('male')}>
-              남성
-            </button>
-          </div>
-        </div>
-
-        <BirthPlaceSelect value={place} onChange={setPlace} />
-
-        <details className="advanced">
-          <summary>고급 설정</summary>
-          <p className="hint advanced-lead">
-            어떤 기준을 선택해야 할지 모르겠다면 기본값을 그대로 사용하세요. 다른 만세력이나 상담 결과와 비교할 때만 기준을 바꿔보면 됩니다.
-          </p>
-          <div className="field">
-            <label>태어난 시간을 계산하는 기준</label>
-            <div className="radio-list">
-              {TIME_STANDARD_OPTIONS.map((o) => (
-                <label key={o.value} className="radio">
-                  <input
-                    type="radio"
-                    name="timeStandard"
-                    checked={timeStandard === o.value}
-                    onChange={() => setTimeStandard(o.value)}
-                  />
-                  <span>
-                    <strong>{o.label}</strong>
-                    <small>{o.desc}</small>
-                  </span>
-                </label>
-              ))}
-            </div>
-            <p className="hint">선택한 기준에 따라 시주가 달라질 수 있어요. 과거에 적용된 표준시와 서머타임은 자동으로 반영합니다.</p>
-          </div>
-          <div className="field">
-            <label>밤늦게 태어난 경우, 날짜를 바꾸는 기준</label>
-            <p className="hint">
-              자시가 시작된 뒤부터 자정 전에 태어났다면, 날짜를 언제 바꿀지에 따라 사주 결과가 달라질 수 있어요. 자시가 시작되는 시각은 위에서 선택한 시간
-              기준에 따라 달라져요.
-            </p>
-            <div className="radio-list">
-              {JASI_RULE_OPTIONS.map((o) => (
-                <label key={o.value} className="radio">
-                  <input
-                    type="radio"
-                    name="dayBoundary"
-                    checked={dayBoundary === o.value}
-                    onChange={() => setDayBoundary(o.value)}
-                  />
-                  <span>
-                    <strong>{o.label}</strong>
-                    <small>{o.desc}</small>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </details>
-
-        {error && <p className="error">{error}</p>}
-        <button className="btn-primary" onClick={submit}>
-          사주 원국 보기
+        </section>
+      )}
+      {result && !editing && onAskSeohwa && (
+        <button className="btn-primary" onClick={onAskSeohwa}>
+          서화에게 내 사주 풀어보기
         </button>
-      </section>
+      )}
+      {result && !editing && usedEvidence.length > 0 && (
+        <section className="card">
+          <h3 className="card-title">서화가 최근 풀이에 쓴 근거</h3>
+          <ul className="used-evidence">
+            {usedEvidence.map((e) => (
+              <li key={e.key}>
+                <strong>{e.title}</strong>
+                <span>{e.text}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="hint">아래 원국에서 계산된 값이에요. AI가 지어낸 값이 아니에요.</p>
+        </section>
+      )}
 
-      {result && <SajuResultView r={result} />}
+      {editing && (
+        <section className="card form">
+          <div className="field">
+            <label>달력</label>
+            <div className="segmented">
+              <button className={!isLunar ? 'active' : ''} onClick={() => setIsLunar(false)}>
+                양력
+              </button>
+              <button className={isLunar ? 'active' : ''} onClick={() => setIsLunar(true)}>
+                음력
+              </button>
+            </div>
+            {isLunar && (
+              <label className="check">
+                <input type="checkbox" checked={isLeapMonth} onChange={(e) => setIsLeapMonth(e.target.checked)} />
+                윤달이에요
+              </label>
+            )}
+          </div>
+
+          <div className="field">
+            <label>생년월일</label>
+            <div className="row3">
+              <div className="suffix-input">
+                <input inputMode="numeric" value={year} onChange={(e) => setYear(e.target.value)} aria-label="년" />
+                <span>년</span>
+              </div>
+              <div className="suffix-input">
+                <input inputMode="numeric" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="월" />
+                <span>월</span>
+              </div>
+              <div className="suffix-input">
+                <input inputMode="numeric" value={day} onChange={(e) => setDay(e.target.value)} aria-label="일" />
+                <span>일</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="field">
+            <label>태어난 시간</label>
+            <div className="row2">
+              <select value={hour} disabled={hourUnknown} onChange={(e) => setHour(Number(e.target.value))} aria-label="시">
+                {HOURS.map((h) => (
+                  <option key={h} value={h}>
+                    {String(h).padStart(2, '0')}시
+                  </option>
+                ))}
+              </select>
+              <select value={minute} disabled={hourUnknown} onChange={(e) => setMinute(Number(e.target.value))} aria-label="분">
+                {MINUTES.map((m) => (
+                  <option key={m} value={m}>
+                    {String(m).padStart(2, '0')}분
+                  </option>
+                ))}
+              </select>
+            </div>
+            <label className="check">
+              <input type="checkbox" checked={hourUnknown} onChange={(e) => setHourUnknown(e.target.checked)} />
+              시간을 몰라요
+            </label>
+          </div>
+
+          <div className="field">
+            <label>성별 (대운 계산에 필요해요)</label>
+            <div className="segmented">
+              <button className={gender === 'female' ? 'active' : ''} onClick={() => setGender('female')}>
+                여성
+              </button>
+              <button className={gender === 'male' ? 'active' : ''} onClick={() => setGender('male')}>
+                남성
+              </button>
+            </div>
+          </div>
+
+          <BirthPlaceSelect value={place} onChange={setPlace} />
+
+          <details className="advanced">
+            <summary>고급 설정</summary>
+            <p className="hint advanced-lead">
+              어떤 기준을 선택해야 할지 모르겠다면 기본값을 그대로 사용하세요. 다른 만세력이나 상담 결과와 비교할 때만 기준을 바꿔보면 됩니다.
+            </p>
+            <div className="field">
+              <label>태어난 시간을 계산하는 기준</label>
+              <div className="radio-list">
+                {TIME_STANDARD_OPTIONS.map((o) => (
+                  <label key={o.value} className="radio">
+                    <input
+                      type="radio"
+                      name="timeStandard"
+                      checked={timeStandard === o.value}
+                      onChange={() => setTimeStandard(o.value)}
+                    />
+                    <span>
+                      <strong>{o.label}</strong>
+                      <small>{o.desc}</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <p className="hint">선택한 기준에 따라 시주가 달라질 수 있어요. 과거에 적용된 표준시와 서머타임은 자동으로 반영합니다.</p>
+            </div>
+            <div className="field">
+              <label>밤늦게 태어난 경우, 날짜를 바꾸는 기준</label>
+              <p className="hint">
+                자시가 시작된 뒤부터 자정 전에 태어났다면, 날짜를 언제 바꿀지에 따라 사주 결과가 달라질 수 있어요. 자시가 시작되는 시각은 위에서 선택한 시간
+                기준에 따라 달라져요.
+              </p>
+              <div className="radio-list">
+                {JASI_RULE_OPTIONS.map((o) => (
+                  <label key={o.value} className="radio">
+                    <input
+                      type="radio"
+                      name="dayBoundary"
+                      checked={dayBoundary === o.value}
+                      onChange={() => setDayBoundary(o.value)}
+                    />
+                    <span>
+                      <strong>{o.label}</strong>
+                      <small>{o.desc}</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </details>
+
+          {error && <p className="error">{error}</p>}
+          <button className="btn-primary" onClick={submit}>
+            {initial || result ? '저장하고 사주 원국 보기' : '사주 원국 보기'}
+          </button>
+          <p className="hint">입력한 출생 정보는 이 기기에만 저장되고, 풀이를 만들 때만 서버로 보내요.</p>
+        </section>
+      )}
+
+      {result && !editing && <SajuResultView r={result} />}
     </div>
   );
 }

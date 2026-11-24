@@ -104,7 +104,7 @@ export default function CharacterProfile({ c, hub, favorite, onToggleFavorite, o
           <span aria-hidden>💬</span>
           {disabled ? '준비 중' : '대화 시작'}
         </button>
-        <button className="profile-action" disabled={!recent || c.screen !== 'chat'} onClick={() => onResume(c)}>
+        <button className="profile-action" disabled={!recent || (c.screen !== 'chat' && c.screen !== 'saju')} onClick={() => onResume(c)}>
           <span aria-hidden>↩</span>이어서 대화
         </button>
         <button className="profile-action" onClick={() => onAnalyses(c)}>

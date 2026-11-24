@@ -173,7 +173,7 @@ export const CHARACTERS: Character[] = [
     bg: 'var(--avatar-violet)',
     paid: true,
     screen: 'saju',
-    persona: 'seohwa', // 대화방 통합 시 사용 (현재는 폼 화면)
+    persona: 'seohwa', // 사주 화면의 「서화와 채팅」 탭에서 사용
     extra: [{ label: '궁합 보기', screen: 'compat' }],
   },
   {

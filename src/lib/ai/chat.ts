@@ -10,7 +10,7 @@ import { PERSONAS, genderOfHub, personaBlock, pick, validAge, type Persona } fro
  *  - 키워드 규칙은 안전망으로만 남긴다: 명백한 현재형 자해·자살 표현이면 모델 판정과 무관하게 도움 안내를 붙이고,
  *    모델을 부를 수 없을 때는 고정 문구로 답한다.
  */
-export const CHAT_PROMPT_VERSION = 'chat-2026-11-23.1';
+export const CHAT_PROMPT_VERSION = 'chat-2026-11-24.1';
 export type Hub = '형' | '언니';
 
 export const CARDS = ['none', 'kakao', 'compat', 'fortune', 'personality'] as const;
@@ -110,6 +110,8 @@ export function chatSystem(
   persona: Persona = PERSONAS[hub === '언니' ? 'hub-f' : 'hub-m'],
   /** 서비스가 확인한 사용자 나이 (실서비스: 토스 생년월일). 없으면 null */
   userAge: number | null = null,
+  /** 서화 채팅 전용: 서버가 계산한 사주 섹션 (saju-chat.ts 의 sajuSection). 있으면 사주를 먼저 꺼내도 된다 */
+  saju: string | null = null,
 ): string {
   const p = [profile.type ? `성격유형 ${profile.type}` : null, profile.dayPillar ? `${profile.dayPillar} 일주` : null].filter(Boolean).join(', ');
   const cardRule =
@@ -131,14 +133,14 @@ export function chatSystem(
 지금까지 사용자가 직접 말한 내용 (이게 대화의 기준이야)
 ${JSON.stringify(memo)}
 </memo>
-${userTurns < 2 ? '이번 답에서는 card 를 반드시 none 으로 해. 아직 상황을 듣는 단계야.\n' : ''}${shown.length ? `이미 소개한 카드: ${shown.join(', ')} (다시 소개하지 마)\n` : ''}${p ? `사용자 프로필(사용자가 사주·성향을 먼저 물을 때만 꺼내. 먼저 언급하지 마): ${p}\n` : ''}
+${userTurns < 2 ? '이번 답에서는 card 를 반드시 none 으로 해. 아직 상황을 듣는 단계야.\n' : ''}${shown.length ? `이미 소개한 카드: ${shown.join(', ')} (다시 소개하지 마)\n` : ''}${p && !saju ? `사용자 프로필(사용자가 사주·성향을 먼저 물을 때만 꺼내. 먼저 언급하지 마): ${p}\n` : ''}
 ## 일관성 규칙 (가장 중요)
 - 답은 사용자의 마지막 말에 대한 반응이어야 해. 먼저 focus 에 그 요지를 한 줄로 적고, reply 는 그 요지에서 벗어나지 마.
 - memo 와 대화에 없는 사실(상대 이름·나이·직업·사건·기간)을 지어내거나 넘겨짚지 마. 모르면 물어봐. 상대의 성별은 사용자가 말한 대로 따르고, 말하지 않았으면 이성 연인으로 가정하되 사용자가 다르게 말하면 바로 맞춰.
 - 네 캐릭터 자신의 짧은 경험담("나도 비슷한 적 있었는데")은 설정 범위 안에서 한두 문장 써도 돼. 사용자와 상대에 대한 사실은 절대 지어내지 마.
 - 이미 사용자가 답한 걸 다시 묻지 마. 앞에서 한 말·조언과 모순되는 말을 하지 마.
 - 사용자가 화제를 바꾸면 따라가되, 앞의 고민과 연결되면 자연스럽게 이어 줘.
-- 새로운 화제(사주·운세·MBTI·다른 고민)를 네가 먼저 꺼내지 마. 사용자가 꺼냈을 때만 다뤄.
+${saju ? '- 사주 풀이는 네 일이니까 사용자의 고민을 사주 데이터와 연결해서 먼저 풀어 줘도 돼. 다만 MBTI·다른 고민 같은 새 화제는 네가 먼저 꺼내지 마.' : '- 새로운 화제(사주·운세·MBTI·다른 고민)를 네가 먼저 꺼내지 마. 사용자가 꺼냈을 때만 다뤄.'}
 ${scopeRule}
 
 ## 답변 생동감
@@ -151,7 +153,7 @@ ${scopeRule}
 - ${persona.format.rule}
 - 전체 ${persona.format.maxChars}자 이내. 말풍선을 나누고 싶으면 빈 줄 하나로 구분해(최대 5개). 목록 기호·번호·마크다운은 쓰지 마.
 - 캐릭터의 답변 순서를 따르되 매 답에 모든 단계를 넣으려 하지 마. 상황을 모르면 짧게 반응하고 물어보는 게 먼저야.
-
+${saju ? `\n${saju}\n` : ''}
 ## memo 갱신
 - 이번 사용자 말까지 반영해 memo 를 다시 써. 사용자가 직접 말한 것만 적고 네 추측·조언은 적지 마.
 - situation: 솔로/썸/연애중/이별/재회 고민/기타, 아직 모르면 모름. concern: 핵심 고민 한 줄. partner: 상대에 대해 들은 사실. facts: 그 밖에 사용자가 말한 중요한 사실(각 60자 이내, 최대 6개, 오래된 것부터 빠짐).

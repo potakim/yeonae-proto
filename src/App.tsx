@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import Home from './pages/Home';
-import SajuPage from './pages/SajuPage';
+import SeohwaPage from './pages/SeohwaPage';
 import PersonalityPage from './pages/PersonalityPage';
 import ChatPage from './pages/ChatPage';
 import CompatPage from './pages/CompatPage';
@@ -9,8 +9,9 @@ import DetectivePage from './pages/DetectivePage';
 import CharacterProfile from './pages/CharacterProfile';
 import { IntroTab, MyTab, TalkTab } from './pages/TabStubs';
 import BottomTab, { type Tab } from './components/BottomTab';
-import { calculateSaju, type SajuInput } from './lib/saju';
-import { hubOf, nameOf, type Character } from './data/characters';
+import { calculateSaju } from './lib/saju';
+import { clearBirth, loadBirth, saveBirth, type StoredBirth } from './lib/birth-store';
+import { byId, hubOf, nameOf, type Character } from './data/characters';
 import { useFavorites } from './lib/favorites';
 import { SessionProvider, useSessionStore } from './lib/sessions/context';
 import { memoForNew, type Session } from './lib/sessions/store';
@@ -60,8 +61,10 @@ function Shell() {
     }
   };
   const favorites = useFavorites(hubOf(hub).id);
-  // 이 세션에서 입력한 내 정보 (궁합·대화에 재사용, 저장하지 않음)
-  const [mySaju, setMySaju] = useState<SajuInput | null>(null);
+  // 내 출생 정보 — 이 기기에만 저장 (서화 채팅·궁합에 재사용). 실서비스: 토스 로그인 정보 + 서버 저장
+  const [birth, setBirthState] = useState<StoredBirth | null>(loadBirth);
+  const mySaju = birth?.input ?? null;
+  const seohwa = byId('saju-master')!;
   const [myType, setMyType] = useState<string | null>(null);
 
   const go = (s: Screen) => {
@@ -75,7 +78,7 @@ function Shell() {
     setProfile(null);
     setCurrent(c);
     setSession(s);
-    go('chat');
+    go(c.screen === 'saju' ? 'saju' : 'chat'); // 서화는 대화도 사주 화면의 「서화와 채팅」 탭에서 연다
   };
   /** 프로필 '대화 시작' — 채팅 캐릭터는 이전 상담이 있으면 세션 시트, 없으면 바로 새 세션. 폼 화면 캐릭터는 그 화면으로 */
   const startWith = (c: Character, screen?: Screen) => {
@@ -91,6 +94,7 @@ function Shell() {
     }
     setProfile(null);
     setCurrent(c);
+    setSession(null);
     go(target);
   };
   /** 프로필 '이어서 대화' — 가장 최근 세션 재개 */
@@ -116,7 +120,7 @@ function Shell() {
   const chatCharacter = current?.persona ? current : hubOf(hub);
   // chat 화면은 항상 openSession 을 거쳐 들어온다 (렌더 중 세션 생성 금지)
   const chatSession = screen === 'chat' ? session : null;
-  const title = current ? nameOf(current, hub) : '모두의 연애';
+  const title = current ? nameOf(current, hub) : screen === 'saju' ? nameOf(seohwa, hub) : '모두의 연애';
   const inTabRoot = screen === 'home';
 
   return (
@@ -135,7 +139,28 @@ function Shell() {
         {screen === 'home' && tab === 'talk' && <TalkTab hub={hub} onOpen={openProfile} onResume={openSession} />}
         {screen === 'home' && tab === 'intro' && <IntroTab />}
         {screen === 'home' && tab === 'my' && <MyTab />}
-        {screen === 'saju' && <SajuPage onSaved={setMySaju} />}
+        {screen === 'saju' && (
+          <SeohwaPage
+            hub={hub}
+            age={age}
+            character={seohwa}
+            birth={birth}
+            onBirth={(input, place) => {
+              const b = { input, place };
+              saveBirth(b);
+              setBirthState(b);
+            }}
+            onClearBirth={() => {
+              clearBirth();
+              setBirthState(null);
+            }}
+            session={session && session.character === seohwa.id ? session : null}
+            onSession={setSession}
+            initialTab={session && session.character === seohwa.id ? 'chat' : 'saju'}
+            go={go}
+            profile={{ type: myType, dayPillar }}
+          />
+        )}
         {screen === 'personality' && <PersonalityPage hub={hub} onType={onType} />}
         {screen === 'chat' && chatSession && (
           <ChatPage key={chatSession.id} hub={hub} age={age} character={chatCharacter} session={chatSession} onSwitchSession={(s) => openSession(chatCharacter, s)} go={go} profile={{ type: myType, dayPillar }} />

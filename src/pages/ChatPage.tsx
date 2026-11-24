@@ -11,6 +11,8 @@ import type { TarotDraw } from '../lib/tarot';
 import { normalizeQuestion } from '../lib/tarot-normalize';
 import { nameOf, type Character } from '../data/characters';
 import { Avatar } from '../components/CharacterRow';
+import type { Evidence } from '../lib/ai/saju-chat';
+import type { SajuInput } from '../lib/saju';
 
 interface Msg {
   role: 'user' | 'assistant';
@@ -24,7 +26,11 @@ interface Msg {
   tarot?: TarotDraw;
   /** 타로: 질문이 아니거나 범위 밖이라 카드를 쓰지 않은 회차 */
   voided?: boolean;
+  /** 서화: 이 답에 쓰인 사주 근거 카드 (서버 계산값) */
+  evidence?: Evidence[];
 }
+
+const EL_CLASS: Record<string, string> = { 목: 'el-wood', 화: 'el-fire', 토: 'el-earth', 금: 'el-metal', 수: 'el-water' };
 
 type TarotStatus = 'reading' | 'need_question' | 'out_of_scope' | 'safety';
 type DrawRes = { status: 'draw'; token: string; question: string } | { status: 'need_question' | 'safety'; question: string; reply: string; help?: Help | null };
@@ -42,6 +48,10 @@ export default function ChatPage({
   onSwitchSession,
   go,
   profile,
+  birth = null,
+  onOpenSaju,
+  autoSend = null,
+  onEvidence,
 }: {
   hub: HubCharacter;
   /** 사용자 나이 (프로토타입 임시 입력, 없으면 null) */
@@ -51,6 +61,14 @@ export default function ChatPage({
   onSwitchSession: (s: Session) => void;
   go: (s: Screen) => void;
   profile: { type: string | null; dayPillar: string | null };
+  /** 서화 전용: 내 출생 정보. 서버가 이 값으로 사주를 계산해 풀이 근거로 쓴다 */
+  birth?: SajuInput | null;
+  /** 서화 전용: 근거 카드에서 「사주 한눈에 보기」로 */
+  onOpenSaju?: () => void;
+  /** 대화가 비어 있을 때 한 번 자동으로 보낼 첫 질문 */
+  autoSend?: string | null;
+  /** 서화 전용: 가장 최근 답의 근거가 바뀌면 알려 준다 */
+  onEvidence?: (e: Evidence[]) => void;
 }) {
   const store = useSessionStore();
   const persona = PERSONAS[character.persona ?? (hub === '언니' ? 'hub-f' : 'hub-m')];
@@ -153,17 +171,19 @@ export default function ChatPage({
     setError(null);
     try {
       const shownCards = msgs.flatMap((m) => (m.card && m.card !== 'none' ? [m.card] : []));
-      const r = await postApi<{ reply: string; card: Card; memo: ChatMemo; safety: { category: string; help?: Help | null } | null }>('/api/chat', {
+      const r = await postApi<{ reply: string; card: Card; memo: ChatMemo; safety: { category: string; help?: Help | null } | null; evidence?: Evidence[] }>('/api/chat', {
         hub,
         userAge: age,
         character: persona.id,
         profile,
         memo,
         shownCards,
+        ...(birth ? { birth } : {}),
         messages: next.map(({ role, content }) => ({ role, content })),
       });
-      const all: Msg[] = [...next, { role: 'assistant', content: r.reply, card: r.card, help: r.safety?.help ?? null }];
+      const all: Msg[] = [...next, { role: 'assistant', content: r.reply, card: r.card, help: r.safety?.help ?? null, ...(r.evidence?.length ? { evidence: r.evidence } : {}) }];
       if (r.memo) setMemo(r.memo);
+      if (r.evidence?.length) onEvidence?.(r.evidence);
       setMsgs(all);
       persist(all, typed, userTurnsBefore, r.memo ?? memo);
     } catch (e) {
@@ -174,6 +194,15 @@ export default function ChatPage({
       setLoading(false);
     }
   };
+
+  // 「서화에게 내 사주 풀어보기」로 들어오면 첫 질문을 대신 보내 준다 (빈 대화에서 한 번만)
+  const autoSent = useRef(false);
+  useEffect(() => {
+    if (!autoSend || autoSent.current || msgs.length > 0) return;
+    autoSent.current = true;
+    void submit(autoSend, autoSend);
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- autoSend 가 들어온 순간에만 실행
+  }, [autoSend]);
 
   const who = nameOf(character, hub);
 
@@ -194,7 +223,7 @@ export default function ChatPage({
           {session.origin === 'continue' ? '이전 상담의 요약을 가지고 시작해요.' : session.origin === 'partner' ? `${memo.partner || '그 사람'}에 대한 새 고민이에요.` : '다른 캐릭터에서 넘어온 상담이에요.'}
         </p>
       )}
-      <p className="hint center">AI가 답하는 대화예요. 대화는 이 기기에만 저장돼요.</p>
+      <p className="hint center">{birth ? 'AI가 내 사주 정보를 바탕으로 작성한 풀이예요. 대화는 이 기기에만 저장돼요.' : 'AI가 답하는 대화예요. 대화는 이 기기에만 저장돼요.'}</p>
       <div className="chat-list">
         <Bubble who={who} text={greet} />
         {msgs.map((m, i) =>
@@ -208,6 +237,7 @@ export default function ChatPage({
             <div key={i}>
               <Bubble who={who} text={m.content} safety={m.safety} />
               {m.help && <HelpCard help={m.help} />}
+              {m.evidence && m.evidence.length > 0 && <EvidenceCards items={m.evidence} onOpenSaju={onOpenSaju} />}
               {m.card && m.card !== 'none' && (
                 <div className="intro-card">
                   <div className="intro-who">{CARD_INFO[m.card].who} 소개</div>
@@ -302,6 +332,46 @@ export default function ChatPage({
           }}
         />
       )}
+    </div>
+  );
+}
+
+/** 서화: 풀이 근거 — 글자·숫자는 서버가 계산한 값만 그린다 */
+function EvidenceCards({ items, onOpenSaju }: { items: Evidence[]; onOpenSaju?: () => void }) {
+  return (
+    <div className="evidence" role="note" aria-label="풀이 근거">
+      <div className="evidence-head">
+        <strong>풀이 근거</strong>
+        {onOpenSaju && (
+          <button className="btn-text" onClick={onOpenSaju}>
+            사주 한눈에 보기 ›
+          </button>
+        )}
+      </div>
+      <div className="evidence-list">
+        {items.map((e) => (
+          <div key={e.key} className="evidence-card">
+            {e.glyph && <span className={`evidence-glyph ${EL_CLASS[e.glyph.element] ?? ''}`}>{e.glyph.hanja}</span>}
+            <div className="evidence-body">
+              <span className="evidence-title">{e.title}</span>
+              <span className="evidence-text">{e.text}</span>
+              {e.elements && (
+                <div className="evidence-bars">
+                  {Object.entries(e.elements).map(([el, n]) => (
+                    <span key={el} className="evidence-bar">
+                      <i className={EL_CLASS[el] ?? ''} style={{ height: `${Math.min(n, 5) * 6 + 2}px` }} />
+                      <small>
+                        {el}
+                        {n}
+                      </small>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
