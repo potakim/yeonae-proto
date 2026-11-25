@@ -28,4 +28,4 @@ export async function postApi<T>(path: string, body: unknown, signal?: AbortSign
   return j as T;
 }
 
-export const AI_NOTICE = '생성형 AI가 작성한 결과예요. 재미와 참고용으로만 봐 주세요.';
+export const AI_NOTICE = '생성형 AI가 쓴 답변이에요. 재미와 참고용으로 봐 주세요.';

@@ -2924,3 +2924,17 @@ input[type='file'] {
   font-size: 11px;
   color: var(--text-3);
 }
+
+/* 선형 아이콘 (7차 리뷰: 이모지·기호 라벨 대체) */
+.line-icon {
+  display: inline-block;
+  vertical-align: -0.18em;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+.profile-meta {
+  margin: 2px 0 0;
+  font-size: 12px;
+  opacity: 0.8;
+  letter-spacing: 0.04em;
+}

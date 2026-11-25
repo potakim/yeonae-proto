@@ -1,3 +1,4 @@
+import { SHOW_DEV } from '../lib/build-flags';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SajuInput } from '../lib/saju';
 import { buildPersonalBundle, buildSharedBundle, KIND_LABEL, type ReadingKind } from '../lib/fortune/reading';
@@ -102,7 +103,7 @@ export default function FortunePanel({ input }: { input: SajuInput }) {
 
   return (
     <section className="card fortune">
-      <h3 className="card-title">🔮 운세 · 서화 풀이</h3>
+      <h3 className="card-title">서화의 운세 풀이</h3>
       <div className="segmented tabs4">
         {TABS.map((t) => (
           <button key={t.kind} className={kind === t.kind ? 'active' : ''} onClick={() => setKind(t.kind)}>
@@ -128,6 +129,7 @@ export default function FortunePanel({ input }: { input: SajuInput }) {
         </p>
       )}
 
+      {SHOW_DEV && (
       <details className="advanced">
         <summary>테스트 설정</summary>
         <div className="field">
@@ -139,6 +141,7 @@ export default function FortunePanel({ input }: { input: SajuInput }) {
           미리보기: Claude 호출 없이 프롬프트만 받기
         </label>
       </details>
+      )}
 
       <button className="btn-primary" disabled={loading !== null} onClick={() => request(kind)}>
         {loading === kind ? '서화가 풀이를 쓰는 중… (20~40초)' : kind === 'natal' ? '원국 풀이 받기' : `${KIND_LABEL[kind]} 풀이 받기`}
@@ -150,7 +153,7 @@ export default function FortunePanel({ input }: { input: SajuInput }) {
       {kind === 'today' && (
         <div className="shared-box">
           <p className="hint">
-            공용판: 같은 일주({shared.natal.dayPillar})·성별이면 모두 같은 풀이를 봐요. 하루 120건만 만들면 되는 무료 유입용 버전이에요.
+            같은 일주({shared.natal.dayPillar})·성별이면 모두 같은 풀이를 봐요.{SHOW_DEV && ' (개발 메모: 하루 120건만 만들면 되는 무료 유입용 버전)'}
             (오늘 {shared.signals.ganji}, {shared.signals.grade})
           </p>
           <button className="btn-secondary" disabled={loading !== null} onClick={() => request('todayShared')}>
@@ -305,7 +308,7 @@ function ReadingView({ kind, r }: { kind: ReadingKind; r: ApiResult }) {
       <div className="reading-block lucky">
         <div className="reading-label">행운 포인트</div>
         <p>
-          <strong>{x.lucky.item}</strong> — {x.lucky.action}
+          <strong>{x.lucky.item}</strong> · {x.lucky.action}
         </p>
       </div>
       <p className="closing">“{x.closing}”</p>
@@ -319,10 +322,14 @@ function ReadingView({ kind, r }: { kind: ReadingKind; r: ApiResult }) {
         />
       )}
       <p className="ai-label">
-        생성형 AI가 사주 신호를 바탕으로 작성한 풀이예요. 재미와 참고용으로만 봐 주세요.
-        <br />
+        생성형 AI가 쓴 답변이에요. 재미와 참고용으로 봐 주세요.
+        {SHOW_DEV && (
+          <>
+            <br />
         {r.meta.model} · {r.meta.cached ? '캐시' : '새로 생성'} · 프롬프트 {r.meta.promptVersion} · 기준 {r.meta.criteriaVersion}
         {r.meta.usage && ` · 입력 ${r.meta.usage.input.toLocaleString()} / 출력 ${r.meta.usage.output.toLocaleString()} 토큰`}
+          </>
+        )}
       </p>
     </article>
   );

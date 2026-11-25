@@ -30,14 +30,14 @@ export default function SaveAnalysisButton({
     store.saveAnalysis({ type, sourceCharacter, title: partner ? `${title} — ${partner.alias}` : title, summary: summary.slice(0, 160), data, partnerId: partner?.id });
     setSaved(true);
   };
-  if (saved) return <p className="hint center">✓ 저장했어요. 다른 캐릭터와 대화할 때 요약으로 참고돼요.</p>;
+  if (saved) return <p className="hint center">저장했어요. 다른 캐릭터와 대화할 때도 참고할게요.</p>;
   return (
     <div className="save-box">
       {needsAlias && (
-        <input className="text-input" placeholder="상대 별칭 (예: 지훈) — 실명 대신" value={alias} onChange={(e) => setAlias(e.target.value)} maxLength={20} />
+        <input className="text-input" placeholder="상대 별칭 (예: 지훈). 실명 대신 써요" value={alias} onChange={(e) => setAlias(e.target.value)} maxLength={20} />
       )}
       <button className="btn-secondary" onClick={save} disabled={needsAlias && !alias.trim()}>
-        📋 이 결과 저장하기
+        결과 저장
       </button>
     </div>
   );

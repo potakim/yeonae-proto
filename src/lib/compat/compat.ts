@@ -14,7 +14,7 @@ import {
 import { GENERATES, branchRelations, loveStarBranches, stemRelations, TEN_GOD_GROUP } from '../saju-analysis.js';
 import { ELEMENTS, type SajuResult } from '../saju.js';
 
-export const COMPAT_VERSION = '2026-10-28.1';
+export const COMPAT_VERSION = '2026-11-25.1';
 
 export interface CompatItem {
   key: string;
@@ -84,7 +84,7 @@ export function computeCompat(me: Person, partner: Person) {
   // 1) 일간끼리
   const stemRel = stemRelations([{ pos: 'day', char: aDm }, { pos: 'luck', char: bDm }]).map((r) => r.type);
   if (stemRel.includes('천간합')) add({ key: 'dm.combine', title: `일간 ${aDm}${bDm} 합`, delta: R.dayMaster.천간합, detail: '서로를 끌어당겨 묶는 합. 처음부터 마음이 잘 통하는 조합', category: '일간' });
-  else if (stemRel.includes('천간충')) add({ key: 'dm.clash', title: `일간 ${aDm}${bDm} 충`, delta: R.dayMaster.천간충, detail: '생각의 방향이 정면으로 달라 부딪히기 쉬움. 대신 서로 자극이 됨', category: '일간' });
+  else if (stemRel.includes('천간충')) add({ key: 'dm.clash', title: `일간 ${aDm}${bDm} 충`, delta: R.dayMaster.천간충, detail: '생각하는 방향이 달라 부딪히기 쉬워요. 대신 서로 자극이 돼요', category: '일간' });
   if (EL_GEN[aEl] === bEl) add({ key: 'dm.generate.me', title: `${josa(me.label, '이/가')} ${josa(partner.label, '을/를')} 생해 줌 (${aEl}→${bEl})`, delta: R.dayMaster.상생, detail: `${me.label} 쪽이 챙겨 주고 북돋아 주는 관계`, category: '일간' });
   else if (EL_GEN[bEl] === aEl) add({ key: 'dm.generate.partner', title: `${josa(partner.label, '이/가')} ${josa(me.label, '을/를')} 생해 줌 (${bEl}→${aEl})`, delta: R.dayMaster.상생, detail: `${partner.label} 쪽이 기대게 해 주는 관계`, category: '일간' });
   else if (aEl === bEl) add({ key: 'dm.same', title: `같은 ${aEl} 기운`, delta: R.dayMaster.비화, detail: '친구처럼 편하고 말이 통하지만 고집이 부딪힐 수 있음', category: '일간' });
@@ -120,7 +120,7 @@ export function computeCompat(me: Person, partner: Person) {
       .map((p) => `${josa(p.label, '은/는')} 입춘 기준 ${p.saju.zodiac.saju}띠(설날 기준 ${p.saju.zodiac.seollal}띠)`)
       .join(', ');
     if (d !== undefined)
-      add({ key: `zodiac.${t}`, title: `띠 ${aYb}${bYb} ${t}`, delta: d, detail: `띠끼리 ${t} — 가볍게 참고하는 전통 궁합${zNote ? ` · ${zNote}` : ''}`, category: '띠' });
+      add({ key: `zodiac.${t}`, title: `띠 ${aYb}${bYb} ${t}`, delta: d, detail: `띠끼리 ${t}. 가볍게 참고하는 전통 궁합이에요${zNote ? ` · ${zNote}` : ''}`, category: '띠' });
   }
 
   // 5) 오행 보완
@@ -131,7 +131,7 @@ export function computeCompat(me: Person, partner: Person) {
   for (const e of fillsMe) add({ key: `el.fill.me.${e}`, title: `${josa(partner.label, '이/가')} ${me.label}의 빈 ${josa(e, '을/를')} 채움`, delta: R.elementFill, detail: `${me.label}의 원국에 없는 ${e} 기운이 ${partner.label}에게 넉넉함`, category: '오행' });
   for (const e of fillsPartner) add({ key: `el.fill.partner.${e}`, title: `${josa(me.label, '이/가')} ${partner.label}의 빈 ${josa(e, '을/를')} 채움`, delta: R.elementFill, detail: `${partner.label}의 원국에 없는 ${e} 기운이 ${me.label}에게 넉넉함`, category: '오행' });
   const sharedGap = ELEMENTS.filter((e) => ac[e] === 0 && bc[e] === 0);
-  for (const e of sharedGap) add({ key: `el.gap.${e}`, title: `둘 다 ${josa(e, '이/가')} 없음`, delta: R.sharedGap, detail: `같은 빈자리를 가진 두 사람 — ${e}의 성질을 함께 의식하면 좋음`, category: '오행' });
+  for (const e of sharedGap) add({ key: `el.gap.${e}`, title: `둘 다 ${josa(e, '이/가')} 없음`, delta: R.sharedGap, detail: `둘 다 ${e} 기운이 없어요. 이 부분은 함께 신경 쓰면 좋아요`, category: '오행' });
 
   // 6) 도화 교차 (끌림)
   const peach = (owner: SajuResult, other: SajuResult) => {
@@ -150,7 +150,7 @@ export function computeCompat(me: Person, partner: Person) {
     const same = (i: number) => x[i] === y[i];
     add(same(1)
       ? { key: 'mbti.SN.same', title: `${x[1]}${y[1]} 인식 방식이 같음`, delta: m.SN_same, detail: '대화의 결이 비슷해서 말이 잘 통함', category: 'MBTI' }
-      : { key: 'mbti.SN.diff', title: `${x[1]}·${y[1]} 인식 방식이 다름`, delta: m.SN_diff, detail: '한 명은 구체·현실, 한 명은 가능성·의미 — 대화가 엇갈릴 때 예시로 맞추기', category: 'MBTI' });
+      : { key: 'mbti.SN.diff', title: `${x[1]}·${y[1]} 인식 방식이 다름`, delta: m.SN_diff, detail: '한 사람은 현실적인 얘기를, 다른 사람은 가능성 얘기를 좋아해요. 대화가 엇갈리면 예를 들어 맞춰 보세요', category: 'MBTI' });
     add(same(0)
       ? { key: 'mbti.EI.same', title: `둘 다 ${x[0]}`, delta: m.EI_same, detail: x[0] === 'E' ? '함께 밖으로 나가는 에너지' : '조용한 시간을 서로 존중', category: 'MBTI' }
       : { key: 'mbti.EI.diff', title: 'E·I 균형', delta: m.EI_diff, detail: '바깥 활동과 쉬는 시간의 균형을 맞춰 줌', category: 'MBTI' });
@@ -159,7 +159,7 @@ export function computeCompat(me: Person, partner: Person) {
       : { key: 'mbti.TF.diff', title: 'T·F 차이', delta: m.TF_diff, detail: '서로 보완되지만, 다툴 때 "해결"과 "공감" 중 무엇이 먼저인지 정해 두기', category: 'MBTI' });
     add(same(3)
       ? { key: 'mbti.JP.same', title: `둘 다 ${x[3]}`, delta: m.JP_same, detail: x[3] === 'J' ? '계획이 잘 맞음' : '즉흥 데이트가 잘 맞음', category: 'MBTI' }
-      : { key: 'mbti.JP.diff', title: 'J·P 차이', delta: m.JP_diff, detail: '계획파와 즉흥파 — 큰 틀만 정하고 나머지는 열어 두기', category: 'MBTI' });
+      : { key: 'mbti.JP.diff', title: 'J·P 차이', delta: m.JP_diff, detail: '한 사람은 계획파, 한 사람은 즉흥파예요. 큰 틀만 정하고 나머지는 열어 두세요', category: 'MBTI' });
     mbti = { pair: `${x} × ${y}`, note: '자체 기준표 (재미로 보는 참고값)' };
   }
 
@@ -200,12 +200,12 @@ const DAY_BRANCH_TEXT: Record<string, string> = {
   육합: '배우자 자리끼리 짝을 이뤄 자연스럽게 하나가 되는 조합',
   삼합: '배우자 자리가 같은 방향으로 힘을 모음',
   반합: '배우자 자리가 같은 방향으로 힘을 모음',
-  충: '배우자 자리가 정면으로 부딪힘 — 생활 리듬·가치관 차이를 미리 대화로',
-  형: '사소한 마찰이 생기기 쉬움 — 규칙을 정해 두면 편함',
-  자형: '같은 글자끼리 — 비슷해서 같은 지점에서 예민해짐',
-  원진: '끌리면서도 이유 없이 서운해지는 조합 — 단정 말고 확인하기',
-  해: '서운함이 쌓이기 쉬움 — 작은 일도 말로 풀기',
-  파: '약속이 어긋나기 쉬움 — 일정 공유를 습관으로',
+  충: '배우자 자리가 정면으로 부딪혀요. 생활 리듬과 가치관 차이를 미리 얘기해 두세요',
+  형: '사소한 마찰이 생기기 쉬워요. 규칙을 정해 두면 편해요',
+  자형: '같은 글자라서 비슷한 데서 예민해지기 쉬워요',
+  원진: '끌리면서도 괜히 서운해지기 쉬운 조합이에요. 짐작하지 말고 물어보세요',
+  해: '서운함이 쌓이기 쉬워요. 작은 일도 말로 푸세요',
+  파: '약속이 어긋나기 쉬워요. 일정을 자주 공유하세요',
 };
 
 export function compatCriteriaMarkdown(): string {

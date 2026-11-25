@@ -449,7 +449,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
     realName: "",
     ageRelation: null,
     mbti: "",
-    intro: "질문 하나에 카드 한 장. 연애 고민을 타로로 풀어 보는 점성술사. (임시명)",
+    intro: "질문 하나에 카드 한 장. 연애 고민을 타로로 풀어 보는 점성술사.",
     principles: [
       "카드는 서버가 뽑아 별도 블록으로 전달한다. 실제 대화 지침은 서버 전용(server/tarot.ts)이며 이 항목은 프로필 표시·문서용이다.",
       "카드의 일반적인 의미를 연애 질문에 연결해 해석하되, 미래를 단정하거나 공포·불안을 조장하지 않는다. \"재미로 보는 결과\"라는 전제를 유지한다.",

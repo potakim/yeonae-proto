@@ -277,7 +277,7 @@ export default function ChatPage({
       {msgs.filter((m) => m.role === 'user').length === 0 && !pendingTarot && (
         <div className="guide-row">
           <button className="btn-text" onClick={() => setGuide(true)}>
-            ⓘ 어떤 고민을 털어놓으면 좋을까?
+            이런 고민을 얘기해 보세요
           </button>
         </div>
       )}

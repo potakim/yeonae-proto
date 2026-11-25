@@ -65,7 +65,7 @@ export default function Home({ hub, setHub, age, setAge, favorites, onOpen }: Pr
         </span>
         <span className="me-text">
           <strong>user_name</strong>
-          <span>연애 고민이 있다면, 언제든지 💕</span>
+          <span>연애 고민, 언제든 얘기해요</span>
         </span>
         <span className="me-settings">
           <span className="segmented mini" role="tablist" aria-label="내 성별">
@@ -95,7 +95,7 @@ export default function Home({ hub, setHub, age, setAge, favorites, onOpen }: Pr
 
       <Section icon="☆" title="즐겨찾기">
         {favs.length === 0 ? (
-          <p className="empty">자주 쓰는 캐릭터를 ★로 고정해요</p>
+          <p className="empty">자주 찾는 캐릭터를 즐겨찾기해 보세요</p>
         ) : (
           favs.map((c, i) => (
             <CharacterRow key={c.id} c={c} hub={hub} onOpen={onOpen} showStar favorite onToggleFavorite={favorites.toggle} last={i === favs.length - 1} />
@@ -117,7 +117,7 @@ export default function Home({ hub, setHub, age, setAge, favorites, onOpen }: Pr
       <Section icon="✨" title="추천 서비스">
         <div className="reco-scroll">
           <button className="reco-card" onClick={() => onOpen(byId('soeun')!)}>
-            <span className="reco-label">지금 나에게 필요한 상담</span>
+            <span className="reco-label">이런 고민이라면</span>
             <strong>연락이 뜸해졌다면</strong>
             <span>{nameOf(byId('soeun')!, hub)}에게 물어봐요</span>
           </button>
@@ -127,7 +127,7 @@ export default function Home({ hub, setHub, age, setAge, favorites, onOpen }: Pr
             <span>서화 · 무료</span>
           </button>
           <button className="reco-card" onClick={() => onOpen(byId('teacher')!)}>
-            <span className="reco-label">상담 데이터 기반 추천</span>
+            <span className="reco-label">추천</span>
             <strong>내 연애 성향부터</strong>
             <span>선생님 · 문항 무료</span>
           </button>
@@ -135,7 +135,7 @@ export default function Home({ hub, setHub, age, setAge, favorites, onOpen }: Pr
       </Section>
 
       <p className="foot-note">
-        사주·성격유형·궁합·카톡 통계는 코드로 계산하고, 풀이와 대화는 생성형 AI가 작성해요. 결과는 재미와 참고용이에요.
+        사주·성격유형·궁합·카톡 통계는 코드로 계산하고, 풀이와 대화는 생성형 AI가 써요. 재미와 참고용으로 봐 주세요.
       </p>
     </div>
   );

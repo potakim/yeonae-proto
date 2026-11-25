@@ -1,3 +1,4 @@
+import { Icon } from './Icon';
 import { useState } from 'react';
 import type { Character } from '../data/characters';
 import { useSessionStore } from '../lib/sessions/context';
@@ -64,7 +65,7 @@ export default function SessionSheet({ c, onStart, onClose }: { c: Character; on
         {step === 'partner' && (
           <>
             <button className="btn-text" onClick={() => setStep('menu')}>
-              ‹ 뒤로
+              <Icon name="back" />뒤로
             </button>
             <h3>어떤 상대 얘기예요?</h3>
             {partners.map((p) => {
@@ -89,7 +90,7 @@ export default function SessionSheet({ c, onStart, onClose }: { c: Character; on
         {step === 'continue' && (
           <>
             <button className="btn-text" onClick={() => setStep('menu')}>
-              ‹ 뒤로
+              <Icon name="back" />뒤로
             </button>
             <h3>어느 상담에서 이어갈까요?</h3>
             {sessions.map((s) => (

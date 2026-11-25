@@ -1,3 +1,4 @@
+import { SHOW_DEV } from '../lib/build-flags';
 import { useMemo, useState } from 'react';
 import FortunePanel from '../components/FortunePanel';
 import BirthPlaceSelect from '../components/BirthPlaceSelect';
@@ -110,7 +111,7 @@ export default function SajuPage({
       setTimeout(() => document.getElementById('saju-result')?.scrollIntoView({ behavior: 'smooth' }), 50);
     } catch (e) {
       setResult(null);
-      setError(e instanceof Error ? e.message : String(e));
+      setError(e instanceof RangeError ? '날짜와 시간을 다시 확인해 주세요.' : e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -163,7 +164,7 @@ export default function SajuPage({
               </li>
             ))}
           </ul>
-          <p className="hint">아래 원국에서 계산된 값이에요. AI가 지어낸 값이 아니에요.</p>
+          <p className="hint">생년월일시로 계산한 값이에요.</p>
         </section>
       )}
 
@@ -266,7 +267,7 @@ export default function SajuPage({
                   </label>
                 ))}
               </div>
-              <p className="hint">선택한 기준에 따라 시주가 달라질 수 있어요. 과거에 적용된 표준시와 서머타임은 자동으로 반영합니다.</p>
+              <p className="hint">선택한 기준에 따라 시주가 달라질 수 있어요. 옛 표준시와 서머타임은 자동으로 반영해요.</p>
             </div>
             <div className="field">
               <label>밤늦게 태어난 경우, 날짜를 바꾸는 기준</label>
@@ -401,7 +402,7 @@ function SajuResultView({ r }: { r: SajuResult }) {
         <section className="card info">
           {r.zodiac.differs && (
             <p>
-              ℹ️ 사주는 입춘을 기준으로 해가 바뀌어서 <strong>{r.zodiac.saju}띠</strong>로 봐요. 설날 기준으로는{' '}
+              사주는 입춘을 기준으로 해가 바뀌어서 <strong>{r.zodiac.saju}띠</strong>로 봐요. 설날 기준으로는{' '}
               {r.zodiac.seollal}띠예요.
             </p>
           )}
@@ -519,10 +520,12 @@ function SajuResultView({ r }: { r: SajuResult }) {
 
       <FortunePanel key={JSON.stringify(r.input)} input={r.input} />
 
-      <details className="card dev">
-        <summary>개발용 · LLM 해석 단계에 넘길 데이터</summary>
-        <pre>{JSON.stringify(payload, null, 2)}</pre>
-      </details>
+      {SHOW_DEV && (
+        <details className="card dev">
+          <summary>개발용 · LLM 해석 단계에 넘길 데이터</summary>
+          <pre>{JSON.stringify(payload, null, 2)}</pre>
+        </details>
+      )}
     </div>
   );
 }

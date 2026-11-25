@@ -44,7 +44,7 @@ export function TarotCardView({ card, size = 'md' }: { card: TarotDraw; size?: '
 
 /**
  * 뒷면 5장 중 한 장 고르기 (3차 리뷰 2026-11-16: 선택 확인 단계 추가).
- * ① 카드를 누르면 위로 빠져 반짝이고 나머지는 흑백 → ② "이 카드로 결정" 을 눌러야 확정 (고른 카드를 다시 누르면 취소)
+ * ① 카드를 누르면 위로 빠져 반짝이고 나머지는 흑백 → ② "이 카드로 할게요" 를 눌러야 확정 (고른 카드를 다시 누르면 취소)
  * → ③ 서버가 뽑아 둔 카드를 받아 뒤집기 → onPick.
  * 어느 자리를 골라도 카드는 서버가 이미 뽑아 둔 한 장이다 (브라우저·LLM 이 뽑지 않음).
  */
@@ -72,7 +72,7 @@ export function TarotPick({ reveal, onPick }: { reveal: () => Promise<TarotDraw>
       setBusy(false);
     }
   };
-  const hint = card ? `${card.name} ${card.reversed ? '역방향' : '정방향'}` : selected === null ? '마음이 가는 카드 한 장을 골라요' : '정말 이 카드로 결정하시겠습니까?';
+  const hint = card ? `${card.name} ${card.reversed ? '역방향' : '정방향'}` : selected === null ? '마음이 가는 카드 한 장을 골라요' : '이 카드로 할까요?';
   return (
     <div className={`tarot-pick${selected !== null ? ' has-selection' : ''}`} role="group" aria-label="카드 고르기">
       <p className="tarot-pick-hint" aria-live="polite">
@@ -102,7 +102,7 @@ export function TarotPick({ reveal, onPick }: { reveal: () => Promise<TarotDraw>
         {selected !== null && !card && (
           <>
             <button className="btn-primary tarot-confirm-btn" onClick={() => void confirm()} disabled={busy}>
-              {busy ? '카드를 여는 중…' : '✓ 이 카드로 결정'}
+              {busy ? '카드를 여는 중…' : '이 카드로 할게요'}
             </button>
             <p className="tarot-confirm-note">선택한 카드를 다시 누르면 다른 카드를 고를 수 있어요</p>
           </>
@@ -155,13 +155,13 @@ export function CrystalBall() {
         </span>
         <span className="crystal-base" aria-hidden />
       </div>
-      <p className="crystal-text">수정구가 당신과 그 사람의 마음을 읽어내고 있어요…</p>
+      <p className="crystal-text">카드를 읽는 중이에요…</p>
       <span className="crystal-dots" aria-hidden>
         <i />
         <i />
         <i />
       </span>
-      <p className="crystal-sub">수정구를 문지르면 분홍빛이 머물러요</p>
+      <p className="crystal-sub">수정구를 문질러 보세요</p>
     </div>
   );
 }

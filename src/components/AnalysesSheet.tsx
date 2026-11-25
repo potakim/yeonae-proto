@@ -5,7 +5,7 @@ import { ANALYSIS_LABEL, formatWhen, type SavedAnalysis } from '../lib/sessions/
 /** 저장된 분석 목록 — 캐릭터 종속이 아닌 공통 자산. sourceCharacter 는 라벨로만. */
 export function AnalysisList({ items, compact }: { items: SavedAnalysis[]; compact?: boolean }) {
   const store = useSessionStore();
-  if (items.length === 0) return <p className="empty">아직 저장된 분석이 없어요. 궁합·성향·카톡 결과 아래 [저장]을 눌러 보세요.</p>;
+  if (items.length === 0) return <p className="empty">아직 저장된 분석이 없어요. 궁합·성향·카톡 결과 아래 [결과 저장]을 눌러 보세요.</p>;
   return (
     <ul className="analysis-list">
       {items.map((a) => {

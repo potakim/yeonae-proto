@@ -1,3 +1,4 @@
+import { SHOW_DEV } from '../lib/build-flags';
 import type { HubCharacter } from '../App';
 import { CHARACTERS, nameOf, type Character } from '../data/characters';
 import { Avatar } from '../components/CharacterRow';
@@ -42,7 +43,7 @@ export function TalkTab({ hub, onOpen, onResume }: { hub: HubCharacter; onOpen: 
           })}
         </div>
       )}
-      <p className="foot-note">세션은 이 기기에만 저장돼요. 캐릭터를 길게 누르면 프로필이 열려요.</p>
+      <p className="foot-note">상담 내용은 이 기기에만 저장돼요. 캐릭터를 길게 누르면 프로필을 볼 수 있어요.</p>
     </div>
   );
 }
@@ -83,7 +84,7 @@ export function MyTab() {
       <div className="card dev-card">
         <p className="card-title">데이터</p>
         <p>
-          상담 세션 {sessions.length}개 · 상대 프로필 {store.listPartners().length}명 · 저장된 분석 {analyses.length}개
+          상담 {sessions.length}개 · 상대 프로필 {store.listPartners().length}명 · 저장된 분석 {analyses.length}개
         </p>
         <button
           className="btn-text danger"
@@ -94,6 +95,7 @@ export function MyTab() {
           모든 데이터 삭제
         </button>
       </div>
+      {SHOW_DEV && (
       <div className="card dev-card">
         <p className="card-title">테스트 설정</p>
         <label className="check">
@@ -109,6 +111,7 @@ export function MyTab() {
         </label>
         <p className="hint">실서비스는 서버 원격 설정. 여기선 로컬 저장 후 새로고침.</p>
       </div>
+      )}
     </div>
   );
 }

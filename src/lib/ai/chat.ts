@@ -16,10 +16,10 @@ export type Hub = '형' | '언니';
 export const CARDS = ['none', 'kakao', 'compat', 'fortune', 'personality'] as const;
 export type Card = (typeof CARDS)[number];
 export const CARD_INFO: Record<Exclude<Card, 'none'>, { who: string; title: string; desc: string }> = {
-  kakao: { who: '💬 여사친', title: '카톡 분석', desc: '카톡 캡처로 상대 호감도·관계 단계를 읽고 답장도 추천해 줘요' },
-  compat: { who: '🔮 서화', title: '사주×MBTI 궁합', desc: '그 사람 생일만 알면 두 사람 기운을 맞춰 봐요' },
-  fortune: { who: '🔮 서화', title: '연애운', desc: '오늘·이번 주·올해 연애 흐름을 봐요' },
-  personality: { who: '📝 선생님', title: '연애 성향 테스트', desc: '32문항으로 내 연애 스타일을 알아봐요' },
+  kakao: { who: '여사친', title: '카톡 분석', desc: '카톡 캡처로 상대 호감도·관계 단계를 읽고 답장도 추천해 줘요' },
+  compat: { who: '서화', title: '사주×MBTI 궁합', desc: '그 사람 생일만 알면 두 사람 기운을 맞춰 봐요' },
+  fortune: { who: '서화', title: '연애운', desc: '오늘·이번 주·올해 연애 흐름을 봐요' },
+  personality: { who: '선생님', title: '연애 성향 테스트', desc: '32문항으로 내 연애 스타일을 알아봐요' },
 };
 
 export const CATEGORIES = ['normal', 'crisis', 'harm_others', 'violence_victim', 'harmful_request', 'sexual'] as const;

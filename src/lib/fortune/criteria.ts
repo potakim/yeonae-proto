@@ -8,7 +8,7 @@
  */
 import type { FiveElement, TenGod } from 'manseryeok';
 
-export const CRITERIA_VERSION = '2026-10-28.1';
+export const CRITERIA_VERSION = '2026-11-25.1';
 
 export type Tone = '좋음' | '중립' | '주의';
 
@@ -22,16 +22,16 @@ export interface TenGodCriterion {
 }
 
 export const TEN_GOD_CRITERIA: Record<TenGod, TenGodCriterion> = {
-  비견: { keyword: '자기 주장·독립', love: '내 페이스가 강해져요. 맞춰 주기보다 내 방식을 고집하기 쉬운 흐름', tone: '중립', score: 0 },
-  겁재: { keyword: '경쟁·충동', love: '경쟁자나 질투가 끼어들기 쉬워요. 즉흥적인 결정은 한 번 더 생각', tone: '주의', score: -1 },
-  식신: { keyword: '여유·표현·즐거움', love: '자연스러운 매력이 드러나요. 편안한 데이트, 가벼운 대화에 좋은 흐름', tone: '좋음', score: 1 },
+  비견: { keyword: '자기 주장·독립', love: '내 페이스가 강해져요. 상대에게 맞추기보다 내 방식을 고집하기 쉬워요', tone: '중립', score: 0 },
+  겁재: { keyword: '경쟁·충동', love: '경쟁자나 질투가 끼어들기 쉬워요. 즉흥적으로 정하기 전에 한 번 더 생각해 보세요', tone: '주의', score: -1 },
+  식신: { keyword: '여유·표현·즐거움', love: '자연스러운 매력이 드러나요. 편안한 데이트나 가벼운 대화가 잘 풀려요', tone: '좋음', score: 1 },
   상관: { keyword: '솔직함·말·감정 표현', love: '솔직함이 매력이 되지만, 말이 앞서 상처를 줄 수 있어요', tone: '중립', score: 0 },
   편재: { keyword: '활동·사교·새 만남', love: '새로운 사람을 만날 기회, 이벤트·모임에서 인연이 생기기 쉬워요', tone: '좋음', score: 1 },
-  정재: { keyword: '안정·책임·현실', love: '꾸준하고 안정적인 관계에 좋아요. 현실적인 약속을 정하기 좋은 흐름', tone: '좋음', score: 1 },
+  정재: { keyword: '안정·책임·현실', love: '꾸준하고 안정적인 관계에 좋아요. 현실적인 약속을 정하기 좋은 때예요', tone: '좋음', score: 1 },
   편관: { keyword: '긴장·카리스마·압박', love: '강하게 끌리는 사람이 나타나거나 관계에 긴장감이 생겨요', tone: '중립', score: 0 },
   정관: { keyword: '신뢰·약속·격식', love: '진지한 관계로 나아가기 좋아요. 소개·공식적인 만남에 유리', tone: '좋음', score: 1 },
-  편인: { keyword: '직관·생각·고립', love: '생각이 많아져 혼자 결론을 내리기 쉬워요. 오해는 바로 물어보기', tone: '주의', score: -1 },
-  정인: { keyword: '배려·돌봄·안정감', love: '따뜻한 배려를 주고받아요. 마음을 털어놓기 좋은 흐름', tone: '좋음', score: 1 },
+  편인: { keyword: '직관·생각·고립', love: '생각이 많아져 혼자 결론을 내리기 쉬워요. 오해가 생기면 바로 물어보세요', tone: '주의', score: -1 },
+  정인: { keyword: '배려·돌봄·안정감', love: '따뜻한 배려를 주고받아요. 속마음을 털어놓기 좋은 때예요', tone: '좋음', score: 1 },
 };
 
 /** 전통 관점의 이성(배우자) 별: 남자는 재성, 여자는 관성 */
@@ -52,18 +52,18 @@ export interface RelationCriterion {
 
 export const RELATION_CRITERIA: Record<string, RelationCriterion> = {
   천간합: { meaning: '두 기운이 끌어당겨 묶임', love: '마음이 통하고 끌림이 생겨요', score: 1, dayBonus: 1 },
-  육합: { meaning: '지지끼리 짝을 이뤄 묶임', love: '자연스럽게 가까워지는 흐름', score: 1, dayBonus: 1 },
+  육합: { meaning: '지지끼리 짝을 이뤄 묶임', love: '자연스럽게 가까워져요', score: 1, dayBonus: 1 },
   삼합: { meaning: '세 지지가 한 기운으로 모임', love: '주변 도움으로 관계가 풀려요', score: 1, dayBonus: 0 },
-  반합: { meaning: '삼합의 두 글자가 모임', love: '협력과 공감이 생기는 흐름', score: 1, dayBonus: 0 },
+  반합: { meaning: '삼합의 두 글자가 모임', love: '서로 돕고 공감하기 쉬워요', score: 1, dayBonus: 0 },
   방합: { meaning: '같은 계절 기운이 모임', love: '한쪽 기운이 강해져 분위기가 몰려요', score: 0, dayBonus: 0 },
   천간충: { meaning: '두 기운이 부딪힘', love: '생각이나 의견 차이가 드러나요', score: -1, dayBonus: -1 },
   충: { meaning: '정반대 지지가 부딪힘', love: '변화·이동·갈등. 일지 충이면 관계 자리가 흔들려요', score: -1, dayBonus: -1 },
-  형: { meaning: '지지끼리 조정·마찰', love: '사소한 마찰, 조율이 필요한 지점', score: -1, dayBonus: 0 },
-  삼형: { meaning: '세 지지가 서로 형', love: '마찰이 겹치니 속도를 늦추기', score: -1, dayBonus: 0 },
-  자형: { meaning: '같은 글자가 겹쳐 스스로 부담', love: '혼자 감정을 키우기 쉬워요. 스스로를 다그치지 않기', score: -1, dayBonus: 0 },
-  파: { meaning: '틀어짐·깨짐', love: '약속이 어긋나기 쉬워요. 일정은 한 번 더 확인', score: -1, dayBonus: 0 },
-  해: { meaning: '은근히 해를 끼침', love: '서운함이 쌓이기 쉬워요. 작은 일도 말로 풀기', score: -1, dayBonus: 0 },
-  원진: { meaning: '이유 없이 끌리면서 미워함', love: '미묘한 감정 엇갈림. 단정하지 말고 확인하기', score: -1, dayBonus: -1 },
+  형: { meaning: '지지끼리 조정·마찰', love: '사소한 마찰이 생길 수 있어요. 미리 맞춰 두세요', score: -1, dayBonus: 0 },
+  삼형: { meaning: '세 지지가 서로 형', love: '마찰이 겹쳐요. 서두르지 마세요', score: -1, dayBonus: 0 },
+  자형: { meaning: '같은 글자가 겹쳐 스스로 부담', love: '혼자 감정을 키우기 쉬워요. 스스로를 너무 다그치지 마세요', score: -1, dayBonus: 0 },
+  파: { meaning: '틀어짐·깨짐', love: '약속이 어긋나기 쉬워요. 일정은 한 번 더 확인하세요', score: -1, dayBonus: 0 },
+  해: { meaning: '은근히 해를 끼침', love: '서운함이 쌓이기 쉬워요. 작은 일도 그때그때 말로 푸세요', score: -1, dayBonus: 0 },
+  원진: { meaning: '이유 없이 끌리면서 미워함', love: '감정이 미묘하게 엇갈릴 수 있어요. 짐작하지 말고 물어보세요', score: -1, dayBonus: -1 },
 };
 
 export const VOID_SCORE = -1;
@@ -72,7 +72,7 @@ export const VOID_MEANING = '공망(空亡): 기대만큼 채워지지 않는 �
 /** 원국의 연애 신살이 흐름에서 다시 들어올 때 */
 export const STAR_ACTIVATION: Record<string, { love: string; score: number }> = {
   도화: { love: '매력이 눈에 띄는 날. 이성의 관심을 받기 쉬워요', score: 1 },
-  홍염살: { love: '감성과 끌림이 강해져요. 분위기에 휩쓸리지 않게', score: 1 },
+  홍염살: { love: '감성과 끌림이 강해져요. 분위기에 휩쓸리지 않게 조심하세요', score: 1 },
   역마: { love: '이동·여행 중 인연. 장거리·새로운 장소', score: 0 },
 };
 

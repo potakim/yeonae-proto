@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 import { useMemo, useState } from 'react';
 import SaveAnalysisButton from '../components/SaveAnalysisButton';
 import { parseKakaoExport, type ParsedChat } from '../lib/kakao/parse';
@@ -73,7 +74,7 @@ export default function DetectivePage() {
     <div className="page detective">
       <h2 className="page-title">대화 기록 리포트</h2>
       <section className="card bubble">
-        <span className="bubble-who">🕵️ 탐정</span>
+        <span className="bubble-who">탐정</span>
         <p>
           카톡 대화 파일을 주면 누가 먼저 말을 걸었는지, 답장까지 얼마나 걸렸는지 같은 걸 숫자로 정리해 줄게. 나는 기록에 있는 것만 세. 그 사람 속마음이 어떤지는 숫자로 판정하지 않아.
         </p>
@@ -81,7 +82,8 @@ export default function DetectivePage() {
 
       <section className="card form">
         <p className="hint">
-          🔒 대화 내용은 이 기기 안에서만 계산하고 서버로 보내지 않아요. 카톡 대화방 › 오른쪽 위 ≡ › 대화 내보내기 › 텍스트만으로 받은 파일을 넣어 주세요.
+          <Icon name="lock" />
+          대화 내용은 이 기기 안에서만 계산하고 서버로 보내지 않아요. 카톡 대화방 › 오른쪽 위 ≡ › 대화 내보내기 › 텍스트만으로 받은 파일을 넣어 주세요.
         </p>
         <div className="field">
           <label>내보내기 파일 (.txt)</label>
@@ -104,7 +106,7 @@ export default function DetectivePage() {
         {ready && (
           <div className="parsed-box">
             <div className="field">
-              <label>나는 누구예요?</label>
+              <label>이 중에 나는?</label>
               <div className="chips">
                 {parsed.participants.map((p) => (
                   <button key={p.name} className={`chip-btn${me === p.name ? ' on' : ''}`} onClick={() => chooseMe(p.name)}>
@@ -203,7 +205,7 @@ function Report({ r }: { r: KakaoReport }) {
   return (
     <>
       <section className="card bubble">
-        <span className="bubble-who">🕵️ 탐정의 한마디</span>
+        <span className="bubble-who">탐정의 한마디</span>
         {r.comments.map((c) => (
           <p key={c}>{c}</p>
         ))}

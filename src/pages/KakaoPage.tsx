@@ -1,3 +1,4 @@
+import { SHOW_DEV } from "../lib/build-flags";
 import { useState } from "react";
 import { AI_NOTICE, postApi } from "../lib/ai/client";
 import SaveAnalysisButton from "../components/SaveAnalysisButton";
@@ -163,11 +164,10 @@ export default function KakaoPage() {
     <div className="stack">
       <h2 className="page-title">카톡 분석</h2>
       <section className="card bubble">
-        <div className="bubble-who">💬 여사친</div>
+        <div className="bubble-who">여사친</div>
         <p>
-          카톡 대화 보여줘요. 연애 프로 정주행으로 단련된 눈으로 분위기 읽어
-          줄게요. 대화 내보내기(텍스트)로 주면 기간을 골라서 더 정확하게 볼 수
-          있어요.
+          카톡 대화 보여줘요. 분위기가 어떤지 같이 봐 줄게요. 대화
+          내보내기(텍스트)로 주면 기간을 골라서 볼 수 있어요.
         </p>
       </section>
 
@@ -254,7 +254,7 @@ export default function KakaoPage() {
                     {parsed.participants.map((p) => p.name).join(", ")}
                   </p>
                   <div className="field">
-                    <label>나는 누구예요?</label>
+                    <label>이 중에 나는?</label>
                     <div className="chips">
                       {parsed.participants.map((p) => (
                         <button
@@ -463,9 +463,8 @@ export default function KakaoPage() {
               AI가 대화 일부를 바탕으로 추정한 결과예요. {AI_NOTICE}
               <br />
               {result.meta.privacy} · 읽은 메시지{" "}
-              {result.meta.extractedMessages}개 · {result.meta.model} · 토큰{" "}
-              {result.meta.usage.input.toLocaleString()}/
-              {result.meta.usage.output.toLocaleString()}
+              {result.meta.extractedMessages}개
+              {SHOW_DEV && ` · ${result.meta.model} · 토큰 ${result.meta.usage.input.toLocaleString()}/${result.meta.usage.output.toLocaleString()}`}
             </p>
           </article>
 

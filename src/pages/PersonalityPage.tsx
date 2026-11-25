@@ -1,3 +1,4 @@
+import { SHOW_DEV } from '../lib/build-flags';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AI_NOTICE, postApi } from '../lib/ai/client';
 import SaveAnalysisButton from '../components/SaveAnalysisButton';
@@ -207,7 +208,7 @@ function ResultView({
         <p>{profile.loveStyle}</p>
         <div className="two-col">
           <div>
-            <h4>💪 연애 강점</h4>
+            <h4>연애할 때 강점</h4>
             <ul>
               {profile.strengths.map((s) => (
                 <li key={s}>{s}</li>
@@ -215,7 +216,7 @@ function ResultView({
             </ul>
           </div>
           <div>
-            <h4>🚧 조심할 점</h4>
+            <h4>조심할 점</h4>
             <ul>
               {profile.watchOut.map((s) => (
                 <li key={s}>{s}</li>
@@ -237,7 +238,7 @@ function ResultView({
       )}
 
       <section className="card bubble">
-        <div className="bubble-who">{hub === '형' ? '🧢 아는 형' : '🎀 아는 언니'}</div>
+        <div className="bubble-who">{hub === '형' ? '아는 형' : '아는 언니'}</div>
         {ai ? (
           <div className="ai-reading">
             <h4 className="reading-headline">{ai.reading.headline}</h4>
@@ -246,11 +247,11 @@ function ResultView({
             <p>{ai.reading.loveStyle}</p>
             <div className="two-col">
               <div>
-                <h4>💪 연애 강점</h4>
+                <h4>연애할 때 강점</h4>
                 <ul>{ai.reading.strengths.map((x) => <li key={x}>{x}</li>)}</ul>
               </div>
               <div>
-                <h4>🚧 조심할 점</h4>
+                <h4>조심할 점</h4>
                 <ul>{ai.reading.watchOut.map((x) => <li key={x}>{x}</li>)}</ul>
               </div>
             </div>
@@ -258,7 +259,8 @@ function ResultView({
             <p>{ai.reading.situationTip}</p>
             <p className="closing">“{ai.reading.hubComment}”</p>
             <p className="ai-label">
-              {AI_NOTICE} · {ai.meta.model} · {ai.meta.cached ? '캐시' : '새로 생성'}
+              {AI_NOTICE}
+              {SHOW_DEV && ` · ${ai.meta.model} · ${ai.meta.cached ? '캐시' : '새로 생성'}`}
             </p>
           </div>
         ) : (
@@ -286,10 +288,12 @@ function ResultView({
         </button>
       </div>
 
-      <details className="card dev">
-        <summary>개발용 · LLM 해석 단계에 넘길 데이터</summary>
-        <pre>{JSON.stringify(payload, null, 2)}</pre>
-      </details>
+      {SHOW_DEV && (
+        <details className="card dev">
+          <summary>개발용 · LLM 해석 단계에 넘길 데이터</summary>
+          <pre>{JSON.stringify(payload, null, 2)}</pre>
+        </details>
+      )}
 
       <p className="hint center">자체 제작한 성격유형 테스트예요. 공식 MBTI® 검사와는 관련이 없어요.</p>
     </div>

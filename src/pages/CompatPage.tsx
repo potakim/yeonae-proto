@@ -1,3 +1,4 @@
+import { SHOW_DEV } from '../lib/build-flags';
 import { useState } from 'react';
 import BirthForm from '../components/BirthForm';
 import { MBTI_TYPES, defaultBirth } from '../lib/birth-defaults';
@@ -42,7 +43,7 @@ export default function CompatPage({ mySaju, myType }: { mySaju: SajuInput | nul
       setTimeout(() => document.getElementById('compat-result')?.scrollIntoView({ behavior: 'smooth' }), 50);
     } catch (e) {
       setResult(null);
-      setError(e instanceof Error ? e.message : String(e));
+      setError(e instanceof RangeError ? '날짜와 시간을 다시 확인해 주세요.' : e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -57,7 +58,7 @@ export default function CompatPage({ mySaju, myType }: { mySaju: SajuInput | nul
         }),
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(e instanceof RangeError ? '날짜와 시간을 다시 확인해 주세요.' : e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
@@ -67,7 +68,7 @@ export default function CompatPage({ mySaju, myType }: { mySaju: SajuInput | nul
     <div className="stack">
       <h2 className="page-title">사주 × MBTI 궁합</h2>
       <section className="card bubble">
-        <div className="bubble-who">🔮 서화</div>
+        <div className="bubble-who">서화</div>
         <p>그 사람 생일 알아요? 이름은 필요 없어요. 생년월일이랑 아는 만큼만 알려 주면 두 사람 기운을 맞춰 볼게요.</p>
       </section>
 
@@ -160,7 +161,8 @@ export default function CompatPage({ mySaju, myType }: { mySaju: SajuInput | nul
               ))}
               <p className="closing">“{reading.reading.closing}”</p>
               <p className="ai-label">
-                {AI_NOTICE} · {reading.meta.model} · {reading.meta.cached ? '캐시' : '새로 생성'}
+                {AI_NOTICE}
+                {SHOW_DEV && ` · ${reading.meta.model} · ${reading.meta.cached ? '캐시' : '새로 생성'}`}
               </p>
             </article>
           ) : (

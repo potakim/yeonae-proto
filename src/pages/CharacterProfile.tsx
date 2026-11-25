@@ -60,6 +60,7 @@ export default function CharacterProfile({ c, hub, favorite, onToggleFavorite, o
           </h2>
           <p className="profile-role">{c.roleLine}</p>
           <p className="profile-tag">{c.tagline}</p>
+          {c.mbti && <p className="profile-meta">{c.mbti}</p>}
         </div>
       </div>
 
@@ -93,7 +94,7 @@ export default function CharacterProfile({ c, hub, favorite, onToggleFavorite, o
           <dd className="muted">{recent ? `${recent.title} · ${formatWhen(recent.when)}` : '아직 대화한 적이 없어요'}</dd>
         </dl>
         <p className="ai-label">
-          대화와 풀이는 생성형 AI가 작성해요. 결과는 재미와 참고용이에요.
+          생성형 AI가 쓴 답변이에요. 재미와 참고용으로 봐 주세요.
           {c.image && ' 캐릭터 이미지는 AI로 생성한 가상 인물이에요.'}
           {c.placeholder && ' 이 캐릭터의 페르소나·이미지는 준비 중이에요.'}
         </p>

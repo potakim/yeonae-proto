@@ -1,3 +1,5 @@
+import { Icon } from './Icon';
+import { SHOW_DEV } from '../lib/build-flags';
 import { useState } from 'react';
 import type { Character } from '../data/characters';
 import { useSessionStore } from '../lib/sessions/context';
@@ -55,7 +57,7 @@ export default function ChatSidebar({
 
         <h4>새로운 상담</h4>
         <button className="drawer-row primary" onClick={() => setSheet(true)}>
-          ＋ 새로운 상담 시작
+          <Icon name="plus" />새 상담
         </button>
 
         <h4>이전 상담</h4>
@@ -94,16 +96,16 @@ export default function ChatSidebar({
 
         <h4>
           <button className="btn-text" onClick={() => setMemoOpen((o) => !o)}>
-            이 세션이 기억하는 것 {memoOpen ? '▴' : '▾'}
+            이 상담에서 기억하는 내용 {memoOpen ? '▴' : '▾'}
           </button>
         </h4>
         {memoOpen && (
           <div className="memo-box">
             <p>
-              <b>상황</b> {current.memo.situation} · <b>고민</b> {current.memo.concern || '—'}
+              <b>상황</b> {current.memo.situation} · <b>고민</b> {current.memo.concern || '없음'}
             </p>
             <p>
-              <b>상대</b> {current.memo.partner || '—'}
+              <b>상대</b> {current.memo.partner || '없음'}
             </p>
             <ul>{current.memo.facts.map((f) => <li key={f}>{f}</li>)}</ul>
             <button className="btn-text danger" onClick={() => store.updateSession(current.id, { memo: { situation: '모름', concern: '', partner: '', facts: [], pref: '' } })}>
@@ -111,7 +113,7 @@ export default function ChatSidebar({
             </button>
           </div>
         )}
-        <p className="hint">기기에만 저장돼요 (프로토타입). 실서비스는 암호화 저장 · 30일 후 파기.</p>
+        <p className="hint">이 기기에만 저장돼요.{SHOW_DEV && ' (개발 메모: 실서비스는 암호화 저장 · 30일 후 파기)'}</p>
       </aside>
       {sheet && (
         <SessionSheet
