@@ -72,8 +72,11 @@ function Shell() {
     window.scrollTo(0, 0);
   };
   const openProfile = (c: Character) => setProfile(c);
+  // 프로필·홈에서 고른 질문 — 대화방이 열리면 첫 메시지로 한 번 보낸다
+  const [starter, setStarter] = useState<string | null>(null);
   /** 세션을 열고 대화방으로 */
-  const openSession = (c: Character, s: Session) => {
+  const openSession = (c: Character, s: Session, first: string | null = null) => {
+    setStarter(first);
     setSheet(null);
     setProfile(null);
     setCurrent(c);
@@ -95,7 +98,24 @@ function Shell() {
     setProfile(null);
     setCurrent(c);
     setSession(null);
+    setStarter(null);
     go(target);
+  };
+  /** 고른 고민·질문으로 바로 시작 — 항상 새 상담을 만들고 그 문장을 첫 메시지로 보낸다 */
+  const startTopic = (c: Character, text: string) => {
+    const fresh = () => store.createSession({ character: c.id, title: '새 상담', origin: 'new', memo: memoForNew(store.listAnalyses()) });
+    if (c.screen === 'chat') return openSession(c, fresh(), text);
+    if (c.screen === 'saju') {
+      // 서화: 출생 정보가 있으면 채팅 탭으로 바로, 없으면 입력 화면에서 시작하고 질문은 들고 간다
+      if (birth) return openSession(c, fresh(), text);
+      setProfile(null);
+      setCurrent(c);
+      setSession(null);
+      setStarter(text);
+      go('saju');
+      return;
+    }
+    startWith(c);
   };
   /** 프로필 '이어서 대화' — 가장 최근 세션 재개 */
   const resumeWith = (c: Character) => {
@@ -105,6 +125,7 @@ function Shell() {
   const backHome = () => {
     setCurrent(null);
     setSession(null);
+    setStarter(null);
     go('home');
   };
   const onType = useCallback((t: string) => setMyType(t), []);
@@ -135,7 +156,7 @@ function Shell() {
         </header>
       )}
       <main className={`content${inTabRoot ? ' tab-root' : ''}`}>
-        {screen === 'home' && tab === 'home' && <Home hub={hub} setHub={setHub} age={age} setAge={setAge} favorites={favorites} onOpen={openProfile} />}
+        {screen === 'home' && tab === 'home' && <Home hub={hub} setHub={setHub} age={age} setAge={setAge} favorites={favorites} onOpen={openProfile} onResume={openSession} onTopic={(text) => startTopic(hubOf(hub), text)} onStart={startWith} />}
         {screen === 'home' && tab === 'talk' && <TalkTab hub={hub} onOpen={openProfile} onResume={openSession} />}
         {screen === 'home' && tab === 'intro' && <IntroTab />}
         {screen === 'home' && tab === 'my' && <MyTab />}
@@ -157,13 +178,14 @@ function Shell() {
             session={session && session.character === seohwa.id ? session : null}
             onSession={setSession}
             initialTab={session && session.character === seohwa.id ? 'chat' : 'saju'}
+            initialStarter={starter}
             go={go}
             profile={{ type: myType, dayPillar }}
           />
         )}
         {screen === 'personality' && <PersonalityPage hub={hub} onType={onType} />}
         {screen === 'chat' && chatSession && (
-          <ChatPage key={chatSession.id} hub={hub} age={age} character={chatCharacter} session={chatSession} onSwitchSession={(s) => openSession(chatCharacter, s)} go={go} profile={{ type: myType, dayPillar }} />
+          <ChatPage key={chatSession.id} hub={hub} age={age} character={chatCharacter} session={chatSession} onSwitchSession={(s) => openSession(chatCharacter, s)} autoSend={starter} go={go} profile={{ type: myType, dayPillar }} />
         )}
         {screen === 'compat' && <CompatPage mySaju={mySaju} myType={myType} />}
         {screen === 'kakao' && <KakaoPage />}
@@ -178,6 +200,7 @@ function Shell() {
           onToggleFavorite={favorites.toggle}
           onClose={() => setProfile(null)}
           onStart={startWith}
+          onAsk={(c, ask) => (ask.screen ? startWith(c, ask.screen) : startTopic(c, ask.text ?? ask.label))}
           onResume={resumeWith}
           onAnalyses={(c) => setAnalysesFor(c)}
           recent={(() => {

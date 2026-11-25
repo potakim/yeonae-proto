@@ -200,7 +200,7 @@ export default function ChatPage({
   useEffect(() => {
     if (!autoSend || autoSent.current || msgs.length > 0) return;
     autoSent.current = true;
-    void submit(autoSend, autoSend);
+    void (isTarot ? tarotDraw(autoSend) : submit(autoSend, autoSend));
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- autoSend 가 들어온 순간에만 실행
   }, [autoSend]);
 

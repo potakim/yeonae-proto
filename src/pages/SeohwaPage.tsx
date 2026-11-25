@@ -35,6 +35,7 @@ export default function SeohwaPage({
   session,
   onSession,
   initialTab,
+  initialStarter = null,
   go,
   profile,
 }: {
@@ -48,12 +49,15 @@ export default function SeohwaPage({
   session: Session | null;
   onSession: (s: Session) => void;
   initialTab: SeohwaTab;
+  /** 프로필에서 고른 질문 — 채팅을 열 때 기본 첫 질문 대신 보낸다 */
+  initialStarter?: string | null;
   go: (s: Screen) => void;
   profile: { type: string | null; dayPillar: string | null };
 }) {
   const store = useSessionStore();
   const [tab, setTab] = useState<SeohwaTab>(initialTab);
-  const [starter, setStarter] = useState<string | null>(null);
+  // 채팅 탭으로 바로 들어온 경우(세션이 이미 있음)에는 고른 질문을 곧바로 보낸다
+  const [starter, setStarter] = useState<string | null>(initialTab === 'chat' ? initialStarter : null);
   // 가장 최근 답에 쓰인 근거 — 「사주 한눈에 보기」 탭에서도 보여 준다
   const [used, setUsed] = useState<Evidence[]>(() => lastEvidence(session));
 
@@ -63,7 +67,7 @@ export default function SeohwaPage({
       const s = store.listSessions(character.id)[0] ?? store.createSession({ character: character.id, title: '새 상담', origin: 'new', memo: memoForNew(store.listAnalyses()) });
       onSession(s);
     }
-    if (withStarter) setStarter(SEOHWA_STARTER);
+    if (withStarter) setStarter(initialStarter ?? SEOHWA_STARTER);
     setTab('chat');
     window.scrollTo(0, 0);
   };

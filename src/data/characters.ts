@@ -6,6 +6,15 @@ import { PERSONAS, genderOfHub, personaName, type PersonaId } from '../lib/ai/pe
 
 export type Category = 'counsel' | 'kakao' | 'trait' | 'saju' | 'intro';
 
+export interface ProfileAsk {
+  icon: 'heart' | 'users' | 'refresh' | 'chat' | 'calendar' | 'send';
+  label: string;
+  /** 대화의 첫 메시지로 보낼 문장 (없으면 label) */
+  text?: string;
+  /** 대화 대신 열 화면 (예: 궁합) */
+  screen?: Screen;
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -16,6 +25,10 @@ export interface Character {
   tagline: string; // 프로필 태그
   /** 프로필에 작게 따로 보여 주는 MBTI (한 줄 소개에서 분리 — 7차 리뷰) */
   mbti?: string;
+  /** 프로필 키워드 칩 (7차 리뷰 프로필 레이아웃). 서화의 4개는 노션 지정, 나머지는 임시안 */
+  chips?: string[];
+  /** 프로필의 질문 줄 — 누르면 그 문장으로 대화를 시작하거나(text) 다른 화면으로 간다(screen) */
+  asks?: ProfileAsk[];
   does: string[];
   when: string[];
   pricing: string;
@@ -64,6 +77,12 @@ export const CHARACTERS: Character[] = [
     mbti: 'ESFJ',
     does: ['고민을 끝까지 듣고 상황부터 같이 정리해요', '누가 이기느냐보다 싸움을 어떻게 끝낼지 같이 고민해요', '다른 캐릭터가 더 맞는 고민이면 연결해요'],
     when: ['뭐부터 물어봐야 할지 모를 때', '싸우고 나서 어떻게 풀지 막막할 때'],
+    chips: ['갈등 조율', '서운함', '장기 연애', '결혼한 선배'],
+    asks: [
+      { icon: 'refresh', label: '반복되는 다툼', text: '같은 문제로 자꾸 싸워요' },
+      { icon: 'chat', label: '서운함 전하기', text: '서운한 걸 어떻게 말할까요?' },
+      { icon: 'heart', label: '오래된 연애', text: '만나도 예전처럼 즐겁지 않아요' },
+    ],
     pricing: '하루 15번 대화 무료',
     image: 'hub-m',
     emoji: '🧢',
@@ -81,6 +100,12 @@ export const CHARACTERS: Character[] = [
     mbti: 'ISFJ',
     does: ['내 편에서 이야기를 끝까지 들어요', '정면으로 부딪히지 않고 원하는 걸 얻는 말을 같이 찾아요', '연애 말고 직장이나 사람 관계 고민도 괜찮아요'],
     when: ['뭐부터 물어봐야 할지 모를 때', '말은 하고 싶은데 싸우긴 싫을 때'],
+    chips: ['할 말 하는 법', '현실 전략', '결혼 준비', '직장·사람 관계'],
+    asks: [
+      { icon: 'chat', label: '서운함 전하기', text: '서운한 걸 어떻게 말할까요?' },
+      { icon: 'send', label: '답장 고민', text: '답장이 고민돼요' },
+      { icon: 'calendar', label: '앞으로의 계획', text: '앞으로의 계획이 서로 달라요' },
+    ],
     pricing: '하루 15번 대화 무료',
     image: 'hub-f',
     emoji: '🎀',
@@ -97,6 +122,12 @@ export const CHARACTERS: Character[] = [
     mbti: 'ENTP',
     does: ['빠른 리액션과 질문으로 상황을 같이 정리해요', '내 느낌과 실제로 있었던 일을 나눠서 봐요', '무조건 편들지 않고 지금 할 수 있는 행동을 짚어 줘요'],
     when: ['내가 예민한 건지 헷갈릴 때', '상황을 객관적으로 보고 싶을 때'],
+    chips: ['썸', '연락', '사실 확인', '현실 점검'],
+    asks: [
+      { icon: 'heart', label: '저한테도 관심이 있을까요?' },
+      { icon: 'send', label: '연락이 뜸해졌어요' },
+      { icon: 'refresh', label: '계속 만나는 게 맞을까요?' },
+    ],
     pricing: '하루 15번 대화 무료',
     image: 'soeun',
     emoji: '💁‍♀️',
@@ -113,6 +144,12 @@ export const CHARACTERS: Character[] = [
     mbti: 'INTP',
     does: ['남자 입장에서 그 행동이 어떤 뜻일 수 있는지 설명해요', '관계 유지보다 나한테 괜찮은 선택인지 같이 봐요', '연애 얘기가 아니어도 편하게 얘기해요'],
     when: ['남자 마음을 모르겠을 때', '이 관계가 나한테 괜찮은지 헷갈릴 때'],
+    chips: ['남자 입장', '썸', '재회', '현실 점검'],
+    asks: [
+      { icon: 'users', label: '우리 무슨 사이인지 모르겠어요' },
+      { icon: 'send', label: '늘 저만 먼저 연락해요' },
+      { icon: 'refresh', label: '헤어진 사람에게 연락하고 싶어요' },
+    ],
     pricing: '하루 15번 대화 무료',
     image: 'seonghyun',
     emoji: '🤔',
@@ -128,6 +165,7 @@ export const CHARACTERS: Character[] = [
     tagline: '카톡을 보고 호감도와 보낼 답장을 봐 줘요',
     does: ['카톡 캡처를 보고 호감도와 관계 단계를 짐작해요', '보낼 답장을 골라 주고, 재회 가능성도 같이 봐요'],
     when: ['답장 어떻게 보낼지 고민될 때', '그 사람이 날 어떻게 생각하는지 알고 싶을 때'],
+    chips: ['카톡 분석', '호감도', '답장 추천', '재회'],
     pricing: '무료 요약 · 심층 리포트 30크레딧 · 답장 추천 5크레딧',
     emoji: '📸',
     bg: 'var(--avatar-peach)',
@@ -144,6 +182,7 @@ export const CHARACTERS: Character[] = [
     tagline: '카톡 기록으로 선톡과 답장 시간을 세어 봐요',
     does: ['누가 먼저 대화를 시작했는지, 답장까지 얼마나 걸렸는지 같은 기준으로 세어 비교해요', '기간을 나눠 대화량과 답장 시간이 어떻게 달라졌는지 보여 줘요', '숫자와 함께 집계 기준과 표본 수를 알려 주고, 속마음은 판정하지 않아요'],
     when: ['내가 늘 먼저 연락했나 궁금할 때', '요즘 대화가 줄었는지 기록으로 확인하고 싶을 때'],
+    chips: ['선톡', '답장 시간', '대화량', '기간별 변화'],
     pricing: '추후 안내 · 대화 내용은 기기 안에서만 계산',
     emoji: '🕵️',
     bg: 'var(--avatar-mint)',
@@ -159,6 +198,7 @@ export const CHARACTERS: Character[] = [
     tagline: '테스트로 연애 성향과 애착 유형을 알아봐요',
     does: ['자체 제작 문항으로 연애 성향을 알아봐요', '결과를 연애 상황에 맞춰 해석해 줘요'],
     when: ['나는 왜 매번 이럴까 싶을 때', '내 연애 패턴을 알고 싶을 때'],
+    chips: ['연애 성향', '애착 유형', '강점', '조심할 점'],
     pricing: '문항·채점 무료 · 해석 15크레딧',
     emoji: '📝',
     bg: 'var(--avatar-yellow)',
@@ -173,6 +213,12 @@ export const CHARACTERS: Character[] = [
     tagline: '거침없이 말하는 사주 풀이, 연애운과 궁합을 봐요',
     does: ['생년월일시로 사주를 계산해 연애운을 풀어요', '오늘, 이번 주, 올해 연애운을 볼 수 있어요', '그 사람 생일을 알면 궁합도 봐요'],
     when: ['요즘 연애가 왜 안 풀리는지 궁금할 때', '자꾸 싸울 때, 썸이 될지 궁금할 때', '재회를 고민할 때'],
+    chips: ['사주', '궁합', '연애운', '인연'],
+    asks: [
+      { icon: 'heart', label: '요즘 내 연애운이 궁금해요' },
+      { icon: 'users', label: '그 사람과 궁합을 보고 싶어요', screen: 'compat' },
+      { icon: 'refresh', label: '재회해도 괜찮을지 궁금해요' },
+    ],
     pricing: '오늘의 운세 무료 · 원국 풀이·올해 운세·궁합 리포트 크레딧',
     image: 'saju-master',
     emoji: '🔮',
@@ -190,6 +236,12 @@ export const CHARACTERS: Character[] = [
     tagline: '질문 하나에 카드 한 장, 연애 타로',
     does: ['질문을 말하면 카드 한 장을 뽑아 연애 상황에 맞게 풀어 줘요'],
     when: ['연락할까 말까 망설여질 때', '가볍게 오늘 흐름이 궁금할 때'],
+    chips: ['연애 타로', '카드 한 장', '오늘의 질문'],
+    asks: [
+      { icon: 'heart', label: '그 사람도 저한테 관심이 있을까요?' },
+      { icon: 'send', label: '제가 먼저 연락해도 될까요?' },
+      { icon: 'refresh', label: '다시 만나도 괜찮을까요?' },
+    ],
     pricing: '하루 1장 무료 · 추가 뽑기 2크레딧',
     image: 'tarot',
     emoji: '🃏',
@@ -206,6 +258,7 @@ export const CHARACTERS: Character[] = [
     tagline: '소개팅 준비부터 애프터까지',
     does: ['프로필 사진·자기소개 문구를 봐 줘요', '소개 전후 대화를 코칭해 줘요'],
     when: ['소개팅을 앞두고 있을 때'],
+    chips: ['소개팅', '프로필', '애프터'],
     pricing: '코칭 10크레딧',
     emoji: '🎯',
     bg: 'var(--avatar-lavender)',
@@ -222,6 +275,7 @@ export const CHARACTERS: Character[] = [
     tagline: '취향·성격 기반 실제 사람 추천 · 34세 ENTJ',
     does: ['네 취향·취미·성격을 파악해서 잘 맞는 사람을 찾아 줘요'],
     when: ['새로운 만남을 시작하고 싶을 때'],
+    chips: ['소개', '취향 정리', '매칭'],
     pricing: '추후 안내',
     image: 'jihyun',
     emoji: '👍',
