@@ -7,7 +7,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes, randomInt } 
 import { TAROT_CARDS } from '../src/lib/ai/personas.js';
 import type { Env } from './llm.js';
 
-export const TAROT_PROMPT_VERSION = 'tarot-2026-11-23.1';
+export const TAROT_PROMPT_VERSION = 'tarot-2026-11-25.1';
 export const TAROT_REPLY_MAX = 320;
 export const DRAW_TTL_MS = 30 * 60 * 1000;
 
@@ -124,6 +124,7 @@ export const TAROT_SYSTEM = `너는 연애 앱 「모두의 연애」의 타로 
 - 상대를 몰래 추적·감시하거나 보복하는 방법은 어떤 형식으로도 제안하지 않는다.
 
 # 9. 말투
+- ‘~하셨군요’, ‘마음을 돌봐’와 엠대시(—)를 사용하지 않는다. ‘~해보면 어떨까요?’를 습관적으로 반복하지 않는다. 첫 문장은 상황에 맞춰 공감, 질문 또는 바로 답하기 중에서 고른다. 사용자 인용과 안전 안내는 맥락을 보존한다.
 - 신비롭지만 다정한 해요체. 과장된 점술 표현을 피한다.
 - 3~5문장, ${TAROT_REPLY_MAX}자 이내. 카드 의미 → 질문과 연결 → 작은 행동 하나 순서.
 - 이름·연락처 등 개인정보를 묻지 않는다.

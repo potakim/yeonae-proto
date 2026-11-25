@@ -53,7 +53,9 @@ describe('페르소나 · 캐릭터 데이터', () => {
       expect(personaName(p, 'female')).toBe(p.realName);
       for (const g of ['male', 'female'] as const) {
         const b = personaBlock(p, { gender: g, age: 30 });
-        expect(b).toContain('너 스스로를 형·오빠·언니·누나라고 부르지 마');
+        // 기훈만 남성 사용자에게 스스로를 '형'이라고 할 수 있다 (노션 11/25: "형이 들어볼게")
+        if (id === 'hub-m' && g === 'male') expect(b).toContain("너 스스로를 가끔 '형'이라고 해도 돼");
+        else expect(b).toContain('너 스스로를 형·오빠·언니·누나라고 부르지 마');
         expect(b).toContain('memo.pref');
         expect(pick(p.greeting, g)).not.toMatch(/기훈형|기훈오빠|고은언니|고은누나|성현이형|성현오빠|소은누나|소은언니/);
       }
@@ -74,21 +76,32 @@ describe('페르소나 · 캐릭터 데이터', () => {
     expect(m).toContain('여자친구가 화났는데 나도 연락 안 할까?');
     expect(m).toContain('못생겼다고 헤어지자고');
     expect(f).toContain('같은 문제로 계속 싸워요'); // 성별 공통 예시
-    expect(f).toContain('한 번에 하나 정도만');
+    expect(f).toContain('답에 따라 해석이나 도움이 달라질 때만 한 가지');
+    // 11/25: 첫인사 이후 예시 — 짐작을 고쳐 주면 거두고, 보낼 말을 부탁하면 문구부터
+    expect(m).toContain('아, 형이 잘못 짚었네.');
+    expect(f).toContain('별거 아닌 얘기도 난 반갑거든');
+    expect(f).not.toContain('아, 형이 잘못 짚었네.');
   });
 
-  it('고은: 존댓말 기본(원하면 반말), 예비신부, 대인관계까지, 연령대별 해석', () => {
+  it('고은: 처음부터 끝까지 부드러운 반말(11/25 개정), 예비신부, 대인관계까지, 연령대별 해석', () => {
     const goeun = PERSONAS['hub-f'];
     const b = personaBlock(goeun, { gender: 'female', age: 27 });
-    expect(pick(goeun.tone, 'female')).toContain('모르면 편안한 존댓말');
-    expect(pick(goeun.tone, 'female')).toContain('반말을 원하');
+    expect(pick(goeun.tone, 'female')).toContain('처음 인사부터 마무리까지 따뜻하고 부드러운 반말');
+    expect(pick(goeun.tone, 'female')).toContain('사용자가 존댓말을 써도 너는 반말로 답한다');
+    expect(pick(goeun.tone, 'female')).toContain("너 자신을 '언니'라고 부르지도 않는다");
+    // 예시의 고은 대사는 모두 반말로 끝난다 (인용한 '보낼 말'은 제외하고 마지막 문장만 본다)
+    for (const d of goeun.fewShots) for (const t of d.turns) expect(t.assistant, t.user).not.toMatch(/(요|니다)[.?!]?$/);
     expect(b).toContain('예비신부');
     expect(b).toContain('이미 결혼한 사람처럼 말하');
     expect(b).toContain('그 연령대의 현실적인 관심사');
-    expect(b).toContain('사용자가 반말을 원한 경우');
+    expect(b).not.toContain('사용자가 반말을 원한 경우');
+    expect(b).toContain('나도 결혼 준비하면서 그랬어.');
+    expect(b).toContain('다음엔 네가 되는 날 먼저 골라줄래?');
     expect(b).toContain('결혼 얘기만 나오면 기대되면서도 걱정돼요.');
-    expect(pick(goeun.greeting, 'female')).toBe('어머, 요즘 연애하면서 행복해 보이더니 왜 표정이 안 좋아요? 무슨 일 있었어요?');
-    expect(b).toContain('인사말의 표정·예전 모습 이야기는 친근한 연출');
+    expect(pick(goeun.greeting, 'female')).toBe('반가워. 얘기가 좀 뒤죽박죽이어도 괜찮아. 천천히 들려줘.');
+    expect(pick(goeun.greeting, 'male')).toBe('반가워. 어디서부터 얘기할지 애매하면, 맨 먼저 떠오른 것부터 들려줘.');
+    expect(pick(goeun.greeting, null)).toBe(pick(goeun.greeting, 'male'));
+    expect(b).toContain('듣기와 해결 중 하나를 고르라고 다시 묻지 마');
     expect(goeun.scope).toBe('relationships');
     expect(goeun.format.maxChars).toBeGreaterThan(500);
   });
@@ -106,11 +119,14 @@ describe('페르소나 · 캐릭터 데이터', () => {
     expect(f).not.toContain('형, 계속 미뤄지면');
     expect(m).toContain('형, 따뜻한 국물이 당기면 김치찌개 어때요?');
     expect(f).toContain('지민님이라고 불러 주세요');
-    expect(pick(p.greeting, 'male')).toBe('형, 무슨 고민 있으세요? 편하게 이야기해 주세요.');
-    expect(pick(p.greeting, 'female')).toBe('누나, 무슨 고민 있으세요? 편하게 이야기해 주세요.');
+    expect(f).toContain('알겠어요, 지민님. 오늘 뭐가 그렇게 힘들었어요?');
+    expect(f).toContain('끝에 “너는?”을 붙이지 않아도');
+    expect(m).toContain('오늘 바로 다시 만나고 싶은 건지까지 정할 필요는 없어요');
+    expect(pick(p.greeting, 'male')).toBe('형, 무슨 일 있어요?');
+    expect(pick(p.greeting, 'female')).toBe('누나, 무슨 일 있어요?');
     // 성별을 모르면 호칭 없이
     const u = personaBlock(p, { gender: null, age: null });
-    expect(pick(p.greeting, null)).toBe('무슨 고민 있으세요? 편하게 이야기해 주세요.');
+    expect(pick(p.greeting, null)).toBe('무슨 일 있어요?');
     expect(u).toContain('성별을 모르니 호칭 없이 말해');
     // 말투 예시에 반말이 섞이지 않는다
     for (const g of ['male', 'female'] as const) for (const x of pick(p.samples, g)) expect(x).toMatch(/요[.?]?$/);
@@ -122,13 +138,16 @@ describe('페르소나 · 캐릭터 데이터', () => {
     expect(b).toContain('질문으로 상황을 함께 살펴보는 현실적인 연하 동생');
     expect(b).toContain('친근한 연하 동생으로서 존댓말(해요체)이 기본');
     expect(b).toContain("사용자를 '오빠'라고 불러");
-    expect(b).toContain('아, 오빠, 계속 그러면 정말 속상하셨겠어요');
-    expect(b).not.toContain('언니, 원래는 연락 잘했는데');
+    expect(b).toContain('오빠, 그거 계속 그러면 속상하죠.');
+    expect(b).toContain('자기 되는 날을 내놓긴 했네요');
+    expect(b).not.toContain('언니, 답장 속도가 예전이랑');
     expect(personaBlock(p, { gender: 'female', age: 29 })).toContain("사용자를 '언니'라고 불러");
-    expect(b).toContain('가장 중요한 질문 1~2개');
+    expect(b).toContain('해석이나 다음 도움이 달라지는 질문 한 가지');
     expect(b).toContain('차단을 우회한 연락');
     expect(b).toContain('스스로를 누나·언니라고 부르지 않는다');
-    expect(pick(p.greeting, 'male')).toBe('어? 요즘 연애하면서 행복해 보이시더니 왜 표정이 안 좋아요? 무슨 일 있으세요?');
+    expect(pick(p.greeting, 'male')).toBe('오빠, 오늘은 제가 그냥 들어줄까요? 아니면 같이 머리 좀 굴려볼까요?');
+    expect(pick(p.greeting, 'female')).toBe('언니, 오늘은 제가 그냥 들어줄까요? 아니면 같이 머리 좀 굴려볼까요?');
+    expect(pick(p.greeting, null)).toBe('오늘은 제가 그냥 들어줄까요? 아니면 같이 머리 좀 굴려볼까요?');
     // 반말 예시는 모두 '반말을 원한 경우'로 표시돼 있다
     for (const d of p.fewShots) if (!/요[.?]?"?$/.test(d.turns[0].assistant)) expect(d.context, d.turns[0].user).toContain('반말을 원한 경우');
     expect(p.fewShots.length).toBeGreaterThanOrEqual(8);
@@ -138,11 +157,10 @@ describe('페르소나 · 캐릭터 데이터', () => {
     expect(personaBlock(PERSONAS.seohwa)).toContain('답변 예시');
   });
 
-  it('첫 인사말은 노션 지정 문구 (11/23 개정)', () => {
+  it('첫 인사말은 노션 지정 문구 (11/25 개정) — 기훈은 남녀 공통, "연애하면서 행복해 보이더니"는 없다', () => {
     const g = PERSONAS['hub-m'];
-    expect(pick(g.greeting, 'male')).toBe('뭐야, 요즘 연애한다고 행복해 보이더니 왜 표정이 안 좋아? 무슨 일 있었어?');
-    expect(pick(g.greeting, 'female')).toBe('어, 요즘 연애하면서 행복해 보이더니 왜 표정이 안 좋아요? 무슨 일 있었어요?');
-    expect(pick(g.greeting, null)).toBe(pick(g.greeting, 'female'));
+    for (const x of ['male', 'female', null] as const) expect(pick(g.greeting, x)).toBe('표정이 안 좋아 보이는데, 무슨 일 있어?');
+    for (const id of ['hub-m', 'hub-f', 'seonghyun', 'soeun'] as const) for (const x of ['male', 'female', null] as const) expect(pick(PERSONAS[id].greeting, x)).not.toContain('행복해 보이');
   });
 
   it('채팅 캐릭터는 모두 존재하는 페르소나를 가리킨다', () => {
@@ -189,7 +207,7 @@ describe('채팅 프롬프트 — 캐릭터별 형식·범위·사용자 설정'
   it('캐릭터별 답변 형식과 범위가 들어간다', () => {
     const goeun = chatSystem('언니', {}, EMPTY_MEMO, [], 1, PERSONAS['hub-f']);
     expect(goeun).toContain('전체 700자 이내');
-    expect(goeun).toContain('3~6개의 짧은 문단');
+    expect(goeun).toContain('이야기를 이어 가는 중이면 한두 문장으로 충분');
     expect(goeun).toContain('대인관계 고민도');
     const seonghyun = chatSystem('언니', {}, EMPTY_MEMO, [], 1, PERSONAS.seonghyun);
     expect(seonghyun).toContain('평소 2~4문장');
@@ -207,7 +225,24 @@ describe('채팅 프롬프트 — 캐릭터별 형식·범위·사용자 설정'
   it('답변 생동감·말투 선호·AI 고지 규칙이 들어간다', () => {
     const s = chatSystem('형', {}, EMPTY_MEMO, [], 3, PERSONAS['hub-m']);
     expect(s).toContain('## 답변 생동감');
-    expect(s).toContain('같은 답을 반복하지 말고');
+    // 11/25: 표현 규칙(전 캐릭터) + 첫인사 이후의 상담 규칙(상담 캐릭터 4인)
+    expect(s).toContain('매번 공감으로 시작하지 마');
+    expect(s).toContain('엠대시(—)를 쓰지 마');
+    expect(s).toContain('공감과 해결 중 하나를 먼저 고르게 하지 마');
+    expect(s).toContain('이전 짐작을 거두고 정정한 내용을 다음 답에 반영해');
+    expect(s).toContain('실제로 보낼 문구 하나를 바로 줘');
+    expect(s).toContain('사용자가 마지막으로 부탁한 일');
+    const seohwa = chatSystem('형', {}, EMPTY_MEMO, [], 3, PERSONAS.seohwa);
+    expect(seohwa).toContain('엠대시(—)를 쓰지 마');
+    expect(seohwa).not.toContain('공감과 해결 중 하나를 먼저 고르게 하지 마');
+    expect(seohwa).toContain('같은 답을 반복하지 말고');
+    // 상담 캐릭터의 예시·말투 샘플 자체가 금지 표현을 쓰지 않는다
+    for (const id of ['hub-m', 'hub-f', 'seonghyun', 'soeun'] as const)
+      for (const g of ['male', 'female', null] as const) {
+        const b = personaBlock(PERSONAS[id], { gender: g, age: 28 });
+        const lines = b.split('\n').filter((l) => l.startsWith(PERSONAS[id].realName + ':') || l.startsWith('- "'));
+        for (const l of lines) expect(l, `${id}`).not.toMatch(/하셨군요|마음을 돌봐|—|어떨까요/);
+      }
     expect(s).toContain('pref: 사용자가 직접 요청한 말투·호칭 선호');
     expect(s).toContain('정직하게 AI 캐릭터라고 답해');
   });
