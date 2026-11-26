@@ -1,13 +1,14 @@
 // 화면설계서 v0.3 §10 캐릭터표 + 노션 캐릭터 페이지 2026-11-19 개정 기준. 페르소나(프롬프트용)는 src/lib/ai/personas.ts.
 // 상담 캐릭터는 실명으로 표시한다 (고정 나이 없음, 형·오빠·언니·누나 호칭은 사용자가 부를 때만).
 // 이미지: 노션 페르소나 자료(실사형, AI 생성) — 출시 전 초상권·실존 인물 유사성 검토 대상.
+import type { IconName } from '../components/lucide-icons';
 import type { Screen } from '../App';
 import { PERSONAS, genderOfHub, personaName, type PersonaId } from '../lib/ai/personas';
 
 export type Category = 'counsel' | 'kakao' | 'trait' | 'saju' | 'intro';
 
 export interface ProfileAsk {
-  icon: 'heart' | 'users' | 'refresh' | 'chat' | 'calendar' | 'send' | 'info' | 'message' | 'handshake' | 'heartHandshake';
+  icon: IconName;
   label: string;
   /** 대화의 첫 메시지로 보낼 문장 (없으면 label) */
   text?: string;
@@ -46,6 +47,8 @@ export interface Character {
   /** 실사 이미지 (public/characters/<id>-avatar.webp, -hero.webp). 없으면 이모지 */
   image?: string;
   emoji: string;
+  /** 캐릭터 사진이 없을 때 쓰는 임시 아이콘 (6차 리뷰). 없으면 emoji */
+  icon?: IconName;
   bg: string;
   paid?: boolean;
   isNew?: boolean;
@@ -61,12 +64,12 @@ export interface Character {
   placeholder?: boolean;
 }
 
-export const SECTIONS: { key: Category; icon: string; title: string; flag?: 'intro_tab' }[] = [
-  { key: 'counsel', icon: '💬', title: '연애 상담' },
-  { key: 'kakao', icon: '📱', title: '카톡 분석' },
-  { key: 'trait', icon: '🧩', title: '성향 테스트' },
-  { key: 'saju', icon: '☯️', title: '사주 · 궁합 · 타로' },
-  { key: 'intro', icon: '👥', title: '소개', flag: 'intro_tab' },
+export const SECTIONS: { key: Category; icon: IconName; title: string; flag?: 'intro_tab' }[] = [
+  { key: 'counsel', icon: 'message', title: '연애 상담' },
+  { key: 'kakao', icon: 'messages', title: '카톡 분석' },
+  { key: 'trait', icon: 'brain', title: '성향 테스트' },
+  { key: 'saju', icon: 'sparkles', title: '사주 · 궁합 · 타로' },
+  { key: 'intro', icon: 'users', title: '소개', flag: 'intro_tab' },
 ];
 
 export const CATEGORY_LABEL: Record<Category, string> = {
@@ -203,6 +206,7 @@ export const CHARACTERS: Character[] = [
     chips: ['카톡 분석', '호감도', '답장 추천', '재회'],
     pricing: '무료 요약 · 심층 리포트 30크레딧 · 답장 추천 5크레딧',
     emoji: '📸',
+    icon: 'camera',
     bg: 'var(--avatar-peach)',
     paid: true,
     screen: 'kakao',
@@ -220,6 +224,7 @@ export const CHARACTERS: Character[] = [
     chips: ['선톡', '답장 시간', '대화량', '기간별 변화'],
     pricing: '추후 안내 · 대화 내용은 기기 안에서만 계산',
     emoji: '🕵️',
+    icon: 'search',
     bg: 'var(--avatar-mint)',
     isNew: true,
     screen: 'detective',

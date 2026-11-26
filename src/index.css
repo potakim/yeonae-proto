@@ -3553,3 +3553,122 @@ input[type='file'] {
 .cp-cta:active {
   filter: brightness(0.95);
 }
+
+/* ── 6차 리뷰: 답변 대기 "타자 치는 중..." 파도 · 타로 말풍선 순차 표시 ── */
+.chat-bubble.typing {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  width: fit-content;
+}
+.chat-bubble + .chat-bubble.typing {
+  margin-top: 6px;
+  border-radius: 16px;
+}
+.wave-text {
+  display: inline-flex;
+  white-space: nowrap;
+  color: #555166;
+}
+.wave-text i {
+  display: inline-block;
+  font-style: normal;
+  animation: love-wave 1.45s ease-in-out infinite;
+}
+.wave-text i.space {
+  animation: none;
+}
+@keyframes love-wave {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-6px);
+  }
+}
+.chat-bubble.appear {
+  animation: bubble-rise 0.3s ease both;
+}
+@keyframes bubble-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wave-text i,
+  .chat-bubble.appear {
+    animation: none;
+  }
+}
+
+/* ── 6차 리뷰: 이모지 → Lucide 선형 아이콘 ── */
+.section-icon,
+.tab-icon,
+.icon-btn,
+.me-avatar,
+.star,
+.chev,
+.section-chev,
+.hero-btn,
+.topbar-back,
+.profile-action span,
+.avatar {
+  display: grid;
+  place-items: center;
+}
+.section-icon .line-icon,
+.tab-icon .line-icon,
+.icon-btn .line-icon,
+.me-avatar .line-icon,
+.star .line-icon,
+.chev .line-icon,
+.section-chev .line-icon,
+.hero-btn .line-icon,
+.topbar-back .line-icon,
+.profile-action .line-icon,
+.avatar .line-icon,
+.profile-hero-art .line-icon {
+  margin: 0;
+  vertical-align: 0;
+}
+.section-icon {
+  color: var(--brand-violet);
+}
+.me-avatar {
+  color: #5b7fd6;
+}
+.section-chev,
+.section-chev.open {
+  transform: none;
+  transition: transform 0.15s;
+}
+.section-chev:not(.open) {
+  transform: rotate(-90deg);
+}
+.star {
+  color: #c4c9d0;
+}
+.star.on {
+  color: var(--brand-pink);
+}
+.hero-btn.on {
+  color: var(--brand-pink);
+  border-color: #fff;
+  background: #fff;
+}
+.avatar .line-icon {
+  color: var(--brand-violet);
+}
+.profile-hero-art .line-icon {
+  color: #fff;
+}
+.bottom-tab button {
+  color: #8b95a1;
+}

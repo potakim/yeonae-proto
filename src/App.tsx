@@ -1,3 +1,4 @@
+import { Icon } from './components/Icon';
 import { useCallback, useState } from 'react';
 import Home from './pages/Home';
 import SeohwaPage from './pages/SeohwaPage';
@@ -150,7 +151,7 @@ function Shell() {
       {!inTabRoot && (
         <header className="topbar">
           <button className="topbar-back" onClick={backHome} aria-label="홈으로">
-            ‹
+            <Icon name="back" size={24} />
           </button>
           <span className="topbar-title">{title}</span>
           <span className="topbar-badge">PROTOTYPE</span>

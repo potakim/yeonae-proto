@@ -49,9 +49,9 @@ export default function ChatSidebar({
     <div className="drawer-backdrop" onClick={onClose}>
       <aside className="drawer" onClick={(e) => e.stopPropagation()} aria-label="상담 목록">
         <div className="drawer-head">
-          <strong>☰ {name}</strong>
+          <strong>{name}</strong>
           <button className="icon-btn" onClick={onClose} aria-label="닫기">
-            ✕
+            <Icon name="close" size={18} />
           </button>
         </div>
 
@@ -65,7 +65,7 @@ export default function ChatSidebar({
           <div key={s.id} className={`drawer-session${s.id === current.id ? ' active' : ''}`}>
             <button className="drawer-row" onClick={() => onSwitch(s)} onContextMenu={(e) => (e.preventDefault(), setMenuFor(s.id))}>
               <span className="drawer-title">
-                {s.pinned && '📌 '}
+                {s.pinned && <Icon name="pin" size={14} />}
                 {s.title}
               </span>
               <span className="muted">{formatWhen(s.updatedAt)}</span>

@@ -30,22 +30,22 @@ export default function CharacterProfile({ c, hub, favorite, onToggleFavorite, o
       <div className={`profile-hero${hero ? ' has-image' : ''}`} style={hero ? { backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0.7) 100%), url(${hero})` } : undefined}>
         {!hero && (
           <div className="profile-hero-art" aria-hidden>
-            {c.emoji}
+            {c.icon ? <Icon name={c.icon} size={150} strokeWidth={1.2} /> : c.emoji}
           </div>
         )}
         <div className="profile-top">
           <button className="hero-btn" onClick={onClose} aria-label="닫기">
-            ✕
+            <Icon name="close" size={18} />
           </button>
           <span className="hero-actions">
             <button className={`hero-btn${favorite ? ' on' : ''}`} onClick={() => onToggleFavorite(c.id)} aria-label="즐겨찾기" aria-pressed={favorite}>
-              {favorite ? '★' : '☆'}
+              <Icon name="star" size={18} fill={favorite ? 'currentColor' : 'none'} />
             </button>
             <button className="hero-btn" aria-label="공유">
-              ⤴
+              <Icon name="share" size={17} />
             </button>
             <button className="hero-btn" aria-label="정보">
-              ⓘ
+              <Icon name="info" size={18} />
             </button>
           </span>
         </div>
@@ -130,7 +130,7 @@ export default function CharacterProfile({ c, hub, favorite, onToggleFavorite, o
               <dd className="extra-chips">
                 {c.extra.map((e) => (
                   <button key={e.screen} className="chip-btn" onClick={() => onStart(c, e.screen)}>
-                    {e.label} ›
+                    {e.label}
                   </button>
                 ))}
               </dd>
@@ -143,14 +143,22 @@ export default function CharacterProfile({ c, hub, favorite, onToggleFavorite, o
 
       <div className="profile-actions">
         <button className="profile-action primary" onClick={() => onStart(c)} disabled={disabled}>
-          <span aria-hidden>💬</span>
+          <span aria-hidden>
+            <Icon name="message" size={20} />
+          </span>
           {disabled ? '준비 중' : '대화 시작'}
         </button>
         <button className="profile-action" disabled={!recent || (c.screen !== 'chat' && c.screen !== 'saju')} onClick={() => onResume(c)}>
-          <span aria-hidden>↩</span>이어서 대화
+          <span aria-hidden>
+            <Icon name="undo" size={20} />
+          </span>
+          이어서 대화
         </button>
         <button className="profile-action" onClick={() => onAnalyses(c)}>
-          <span aria-hidden>📋</span>저장된 분석
+          <span aria-hidden>
+            <Icon name="clipboard" size={20} />
+          </span>
+          저장된 분석
         </button>
       </div>
     </div>

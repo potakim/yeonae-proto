@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CallModel } from '../../../server/llm';
 import { handleTarot } from '../../../api/tarot';
-import { TAROT_SYSTEM, checkReading, currentMessage, drawCard, fallbackReading, openDraw, sealDraw, type Draw } from '../../../server/tarot';
+import { TAROT_MAX_BUBBLES, TAROT_SYSTEM, bubblesOf, checkReading, currentMessage, drawCard, fallbackReading, joinBubbles, openDraw, sealDraw, tarotSchema, type Draw } from '../../../server/tarot';
 import { TAROT_CARDS } from '../ai/personas';
 import { NORMALIZE_CARD_NAMES, normalizeQuestion, notAQuestion } from '../tarot-normalize';
 
@@ -277,9 +277,66 @@ describe('POST /api/tarot', () => {
     ]);
   });
 
+  it('6차 리뷰: 해석은 말풍선 목록으로 받아 빈 줄로 이어 붙여 내려준다', async () => {
+    const d = await draw('먼저 연락해도 될까요?');
+    const card = await cardOf(d.token);
+    const o = card.reversed ? '역방향' : '정방향';
+    const bubbles = [`이번에 뽑힌 카드는 ${card.name} ${o}이에요. 숨을 고르는 흐름으로 읽혀요.`, '지금은 서두르기보다 내 마음이 편한 쪽을 살펴볼 때인 것 같아요.', '오늘은 보내고 싶은 말을 한 줄만 적어 보세요.'];
+    const c = makeCaller([{ status: 'reading', card: card.name, orientation: o, bubbles }]);
+    const j = (await (await handleTarot(req({ action: 'read', token: d.token }), { env, callModel: c.fn })).json()) as Record<string, any>;
+    expect(j.status).toBe('reading');
+    expect(j.reply.split('\n\n')).toEqual(bubbles);
+    // 말풍선 어디에든 다른 카드를 해석하면 걸러진다 (검사는 이어 붙인 전체에 적용)
+    const other = TAROT_CARDS.find((n) => n !== card.name)!;
+    const d2 = await draw('먼저 연락해도 될까요?');
+    const card2 = await cardOf(d2.token);
+    const o2 = card2.reversed ? '역방향' : '정방향';
+    const other2 = TAROT_CARDS.find((n) => n !== card2.name)!;
+    const c2 = makeCaller([{ status: 'reading', card: card2.name, orientation: o2, bubbles: [`이번에 뽑힌 카드는 ${card2.name} ${o2}이에요.`, `${other2} 카드와 함께 보면 좋은 흐름이에요.`] }]);
+    const j2 = (await (await handleTarot(req({ action: 'read', token: d2.token }), { env, callModel: c2.fn })).json()) as Record<string, any>;
+    expect(j2.meta.fallback).toBe(true);
+    expect(j2.reply).not.toContain(other2);
+    expect(j2.reply.split('\n\n')).toHaveLength(2); // 기본 문구도 말풍선 2개
+    void other;
+  });
+
+  it('6차 리뷰: 해석이 아닌 답은 말풍선 하나로', async () => {
+    const d = await draw('먼저 연락해도 될까요?');
+    const c = makeCaller([{ status: 'out_of_scope', card: '', orientation: '', bubbles: ['그건 제가 바꿀 수 없어요.', '고민을 한 문장으로 말해 줄래요?'] }]);
+    const j = (await (await handleTarot(req({ action: 'read', token: d.token }), { env, callModel: c.fn })).json()) as Record<string, any>;
+    expect(j.void).toBe(true);
+    expect(j.reply).not.toContain('\n');
+    expect(j.reply).toContain('바꿀 수 없어요');
+  });
+
   it('없는·변조된 토큰은 410', async () => {
     expect((await handleTarot(req({ action: 'reveal', token: 'x'.repeat(60) }), { env })).status).toBe(410);
     expect((await handleTarot(req({ action: 'read' }), { env })).status).toBe(410);
     expect((await handleTarot(req({ action: 'nope' }), { env })).status).toBe(400);
+  });
+});
+
+describe('타로 말풍선 분할 (6차 리뷰 2026-11-23)', () => {
+  it('프롬프트와 스키마가 말풍선 목록을 요구한다', () => {
+    expect(TAROT_SYSTEM).toContain('말풍선 2~3개');
+    expect(TAROT_SYSTEM).toContain('"bubbles"');
+    expect(tarotSchema.required).toContain('bubbles');
+    expect(tarotSchema.required).not.toContain('reply');
+  });
+  it('bubblesOf: 빈 것·문자열 아닌 것은 버리고, 마크다운을 지우고, 3개를 넘으면 마지막에 합친다', () => {
+    expect(bubblesOf({ bubbles: [' **하나** ', '', 3, '둘\n셋'] })).toEqual(['하나', '둘 셋']);
+    const many = bubblesOf({ bubbles: ['a', 'b', 'c', 'd', 'e'] });
+    expect(many).toHaveLength(TAROT_MAX_BUBBLES);
+    expect(many[2]).toBe('c d e');
+    expect(bubblesOf({ bubbles: 'x' })).toEqual([]);
+    expect(bubblesOf({})).toEqual([]);
+  });
+  it('예전 형식(reply 한 덩어리)도 받는다 — 빈 줄이 말풍선 구분', () => {
+    expect(bubblesOf({ reply: '첫 문단\n\n둘째 문단' })).toEqual(['첫 문단', '둘째 문단']);
+    expect(joinBubbles(['a', 'b'])).toBe('a\n\nb');
+  });
+  it('전체 길이를 제한한다', () => {
+    const total = joinBubbles(bubblesOf({ bubbles: ['가'.repeat(400), '나'.repeat(400)] })).replace(/\n/g, '').length;
+    expect(total).toBeLessThanOrEqual(480);
   });
 });

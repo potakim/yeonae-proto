@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 import { SHOW_DEV } from '../lib/build-flags';
 import { useMemo, useState } from 'react';
 import FortunePanel from '../components/FortunePanel';
@@ -388,7 +389,10 @@ function SajuResultView({ r }: { r: SajuResult }) {
       {r.warnings.length > 0 && (
         <section className="card warn">
           {r.warnings.map((w) => (
-            <p key={w}>⚠️ {w}</p>
+            <p key={w}>
+              <Icon name="warn" size={16} />
+              {w}
+            </p>
           ))}
           {r.ambiguousWithoutHour.map((a) => (
             <p key={a.key}>

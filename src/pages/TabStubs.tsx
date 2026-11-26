@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 import { useState } from 'react';
 import { SPEECH_OPTIONS, loadSpeech, saveSpeech, type SpeechSetting } from '../lib/speech';
 import { SHOW_DEV } from '../lib/build-flags';
@@ -76,7 +77,9 @@ export function MyTab() {
         {['프로필 편집', '나의 연애 데이터', '저장된 분석', '크레딧', '알림', '설정', '고객센터', '이용약관 · 개인정보처리방침 · AI 이용 고지', '사업자 정보 (놀와이즈솔루션)'].map((t, i, a) => (
           <button key={t} className={`my-row${i === a.length - 1 ? ' last' : ''}`}>
             <span>{t}</span>
-            <span className="chev">›</span>
+            <span className="chev">
+              <Icon name="next" size={18} />
+            </span>
           </button>
         ))}
       </div>

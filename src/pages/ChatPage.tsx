@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 import { useEffect, useRef, useState } from 'react';
 import type { HubCharacter, Screen } from '../App';
 import { postApi } from '../lib/ai/client';
@@ -93,6 +94,9 @@ export default function ChatPage({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  // 방금 도착한 타로 해석 — 말풍선을 하나씩 순서대로 보여 준다 (6차 리뷰). 기록에서 다시 열 때는 한 번에 보인다
+  const [stagedAt, setStagedAt] = useState<number | null>(null);
+  const toEnd = () => endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -146,6 +150,7 @@ export default function ChatPage({
       // reading 이 아니면 이 회차의 카드는 무효 — 말풍선에서 카드를 지운다
       const user: Msg = r.status === 'reading' ? mine : { role: 'user', content: mine.content, voided: true };
       const all: Msg[] = [...base.slice(0, -1), user, { role: 'assistant', content: r.reply, help: r.help ?? null }];
+      if (r.status === 'reading') setStagedAt(all.length - 1);
       setMsgs(all);
       persist(all, mine.content, base.filter((m) => m.role === 'user').length - 1);
     } catch (e) {
@@ -217,7 +222,7 @@ export default function ChatPage({
           <span>{session.title === '새 상담' ? character.tagline : session.title}</span>
         </div>
         <button className="icon-btn" onClick={() => setSidebar(true)} aria-label="상담 목록">
-          ☰
+          <Icon name="menu" size={20} />
         </button>
       </div>
       {session.origin !== 'new' && msgs.length === 0 && (
@@ -237,7 +242,7 @@ export default function ChatPage({
             </div>
           ) : (
             <div key={i}>
-              <Bubble who={who} text={m.content} safety={m.safety} />
+              <Bubble who={who} text={m.content} safety={m.safety} staged={stagedAt === i} onStep={toEnd} />
               {m.help && <HelpCard help={m.help} />}
               {m.evidence && m.evidence.length > 0 && <EvidenceCards items={m.evidence} onOpenSaju={onOpenSaju} />}
               {m.card && m.card !== 'none' && (
@@ -265,7 +270,7 @@ export default function ChatPage({
             />
           </>
         )}
-        {loading && (isTarot && msgs[msgs.length - 1]?.tarot ? <CrystalBall /> : <Bubble who={who} text="…" />)}
+        {loading && (isTarot && msgs[msgs.length - 1]?.tarot ? <CrystalBall /> : <TypingBubble who={who} />)}
         {retryToken && !loading && (
           <div className="guide-row">
             <button className="btn-secondary" onClick={() => void tarotRead(retryToken, msgs)}>
@@ -346,7 +351,7 @@ function EvidenceCards({ items, onOpenSaju }: { items: Evidence[]; onOpenSaju?: 
         <strong>풀이 근거</strong>
         {onOpenSaju && (
           <button className="btn-text" onClick={onOpenSaju}>
-            사주 한눈에 보기 ›
+            사주 한눈에 보기
           </button>
         )}
       </div>
@@ -392,19 +397,60 @@ function HelpCard({ help }: { help: Help }) {
   );
 }
 
-/** 답변의 빈 줄은 말풍선 구분 (캐릭터별 답변 형식) */
-function Bubble({ who, text, safety }: { who: string; text: string; safety?: boolean }) {
-  const parts = safety ? [text] : text.split(/\n\s*\n/).map((t) => t.trim()).filter(Boolean).slice(0, 6);
+/** 답변 대기 표시 — "타자 치는 중..." 글자가 차례로 위아래로 움직인다 (6차 리뷰 2026-11-23). 움직임 줄이기 설정에서는 멈춘 글자만 */
+const TYPING_TEXT = '타자 치는 중...';
+function TypingWave() {
+  return (
+    <div className="chat-bubble typing" role="status" aria-label="타자 치는 중">
+      <span className="wave-text" aria-hidden>
+        {[...TYPING_TEXT].map((ch, i) => (
+          <i key={i} className={ch === ' ' ? 'space' : undefined} style={ch === ' ' ? undefined : { animationDelay: `${[...TYPING_TEXT.slice(0, i)].filter((c) => c !== ' ').length * 0.07}s` }}>
+            {ch === ' ' ? '\u00a0' : ch}
+          </i>
+        ))}
+      </span>
+    </div>
+  );
+}
+function TypingBubble({ who }: { who: string }) {
+  return (
+    <div className="chat-row">
+      <div className="chat-who">
+        {who} <span className="ai-badge">AI</span>
+      </div>
+      <TypingWave />
+    </div>
+  );
+}
+
+const STAGE_GAP_MS = 950; // 말풍선 사이 간격 (첫 말풍선은 바로)
+const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+/** 답변의 빈 줄은 말풍선 구분 (캐릭터별 답변 형식). staged 면 말풍선을 하나씩 순서대로 보여 준다 */
+function Bubble({ who, text, safety, staged = false, onStep }: { who: string; text: string; safety?: boolean; staged?: boolean; onStep?: () => void }) {
+  const split = safety ? [text] : text.split(/\n\s*\n/).map((t) => t.trim()).filter(Boolean).slice(0, 6);
+  const parts = split.length ? split : [text];
+  const [shown, setShown] = useState(() => (staged && parts.length > 1 && !reducedMotion() ? 1 : parts.length));
+  useEffect(() => {
+    if (shown >= parts.length) return;
+    const t = setTimeout(() => setShown((n) => n + 1), STAGE_GAP_MS);
+    return () => clearTimeout(t);
+  }, [shown, parts.length]);
+  useEffect(() => {
+    if (staged) onStep?.();
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- 말풍선이 하나 늘 때마다 아래로 스크롤
+  }, [shown]);
   return (
     <div className="chat-row">
       <div className="chat-who">
         {who} <span className="ai-badge">{safety ? '안내' : 'AI'}</span>
       </div>
-      {(parts.length ? parts : [text]).map((t, i) => (
-        <div key={i} className={`chat-bubble ${safety ? 'safety' : ''}${i > 0 ? ' cont' : ''}`}>
+      {parts.slice(0, shown).map((t, i) => (
+        <div key={i} className={`chat-bubble ${safety ? 'safety' : ''}${i > 0 ? ' cont' : ''}${staged ? ' appear' : ''}`}>
           {t}
         </div>
       ))}
+      {shown < parts.length && <TypingWave />}
     </div>
   );
 }

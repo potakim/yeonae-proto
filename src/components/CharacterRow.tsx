@@ -1,3 +1,4 @@
+import { Icon } from './Icon';
 import type { Character } from '../data/characters';
 import { avatarUrl, nameOf } from '../data/characters';
 import type { HubCharacter } from '../App';
@@ -17,7 +18,7 @@ export function Avatar({ c, size = 56 }: { c: Character; size?: number }) {
   const src = avatarUrl(c);
   return (
     <span className="avatar" style={{ width: size, height: size, background: c.bg, fontSize: Math.round(size * 0.5) }} aria-hidden>
-      {src ? <img src={src} alt="" width={size} height={size} loading="lazy" /> : c.emoji}
+      {src ? <img src={src} alt="" width={size} height={size} loading="lazy" /> : c.icon ? <Icon name={c.icon} size={Math.max(18, Math.round(size * 0.43))} /> : c.emoji}
     </span>
   );
 }
@@ -43,11 +44,11 @@ export default function CharacterRow({ c, hub, onOpen, favorite, onToggleFavorit
           aria-label={favorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
           aria-pressed={favorite}
         >
-          {favorite ? '★' : '☆'}
+          <Icon name="star" size={22} fill={favorite ? 'currentColor' : 'none'} />
         </button>
       ) : (
         <button className="chev" onClick={() => onOpen(c)} aria-label="프로필 보기">
-          ›
+          <Icon name="next" size={18} />
         </button>
       )}
     </div>

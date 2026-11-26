@@ -4,7 +4,7 @@
  * { action: 'draw', question }            → 질문 정규화 → 서버가 카드 추첨 → { status:'draw', token, question }
  *                                            (카드는 아직 안 보냄. 질문이 아니면 카드 없이 need_question)
  * { action: 'reveal', token }             → { card: { index, name, reversed } }  같은 토큰은 항상 같은 카드
- * { action: 'read', token, history? }     → 시스템 프롬프트 + <draw> + <user_input> 로 모델 호출 → 출력 검사
+ * { action: 'read', token, history? }     → 시스템 프롬프트 + <draw> + <user_input> 로 모델 호출(말풍선 목록) → 출력 검사
  *                                            → { status, reply, card? }  reading 이 아니면 카드는 무효(void)
  *
  * 브라우저가 보내는 것은 질문·토큰·지난 회차 기록뿐. 카드 이름은 받지 않는다 (지난 회차는 표시용 기록에서 읽되 해석엔 안 씀).
@@ -20,7 +20,9 @@ import {
   TAROT_SYSTEM,
   cardName,
   checkReading,
+  bubblesOf,
   clampReply,
+  joinBubbles,
   currentMessage,
   drawCard,
   fallbackReading,
@@ -33,7 +35,7 @@ import {
 } from '../server/tarot.js';
 
 const MAX_HISTORY_TURNS = 6;
-type Out = { status: TarotStatus; card: string; orientation: string; safety_type?: string; reply: string };
+type Out = { status: TarotStatus; card: string; orientation: string; safety_type?: string; bubbles?: unknown; reply?: unknown };
 /** 위험 종류에 맞는 도움 안내만 붙인다 (연락처를 일괄 표시하지 않음 — 노션 2026-11-19 개정). other 는 안내 없이 안전 확인만 */
 const helpOf = (t: string | undefined): Help | null => (t === 'self_harm' ? HELP.crisis : t === 'harm_others' ? HELP.harm_others : t === 'violence' ? HELP.violence_victim : null);
 
@@ -102,11 +104,13 @@ export async function handleTarot(request: Request, deps: HandlerDeps = {}): Pro
     const status: TarotStatus = (['reading', 'need_question', 'out_of_scope', 'safety'] as const).includes(r.data.status) ? r.data.status : 'need_question';
     if (status !== 'reading') {
       // 카드 무효(void) — 화면은 이 회차의 카드를 지우고, 실서비스는 차감을 취소한다
-      const text = clampReply(r.data.reply || CANNED.empty);
+      const text = clampReply(bubblesOf(r.data).join(' ') || CANNED.empty); // 해석이 아닌 답은 말풍선 하나로
       return json(200, { status, reply: text, help: status === 'safety' ? helpOf(r.data.safety_type) : null, void: true, meta: { ...meta, model, usage: r.usage } });
     }
-    const why = checkReading(r.data, draw);
-    if (!why) return json(200, { status: 'reading', reply: clampReply(r.data.reply), card, meta: { ...meta, model, usage: r.usage, retried: attempt > 0 } });
+    // 말풍선 목록을 빈 줄로 이어 붙인 문자열로 검사·전달한다 (화면은 빈 줄마다 말풍선을 나눈다)
+    const reply = joinBubbles(bubblesOf(r.data));
+    const why = checkReading({ card: r.data.card, orientation: r.data.orientation, reply }, draw);
+    if (!why) return json(200, { status: 'reading', reply, card, meta: { ...meta, model, usage: r.usage, retried: attempt > 0 } });
     failed = [...failed, why];
     console.warn(`[tarot] 출력 검사 실패 #${attempt + 1}: ${why} (draw ${draw.id}, ${card.name} ${orientationOf(draw)})`);
   }

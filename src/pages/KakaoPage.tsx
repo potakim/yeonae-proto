@@ -1,3 +1,4 @@
+import { Icon } from "../components/Icon";
 import { SHOW_DEV } from "../lib/build-flags";
 import { useState } from "react";
 import { AI_NOTICE, postApi } from "../lib/ai/client";
@@ -396,7 +397,10 @@ export default function KakaoPage() {
         <div className="stack" id="kakao-result">
           {result.safetyNotice && (
             <section className="card warn">
-              <p>⚠️ {result.safetyNotice}</p>
+              <p>
+                <Icon name="warn" size={16} />
+                {result.safetyNotice}
+              </p>
             </section>
           )}
           <section className="card result-hero">

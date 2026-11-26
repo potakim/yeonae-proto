@@ -5,7 +5,7 @@ import { todaysConcerns } from '../data/concerns';
 import { isOn } from '../lib/flags';
 import CharacterRow, { Avatar } from '../components/CharacterRow';
 import ConcernSheet from '../components/ConcernSheet';
-import { Icon } from '../components/Icon';
+import { Icon, type IconName } from '../components/Icon';
 import { useSessionStore } from '../lib/sessions/context';
 import { formatWhen, type Session } from '../lib/sessions/store';
 
@@ -30,7 +30,7 @@ function Section({
   children,
   defaultOpen = true,
 }: {
-  icon: string;
+  icon: IconName;
   title: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
@@ -40,11 +40,11 @@ function Section({
     <section className="section">
       <button className="section-head" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
         <span className="section-icon" aria-hidden>
-          {icon}
+          <Icon name={icon} size={18} />
         </span>
         <span className="section-title">{title}</span>
         <span className={`section-chev${open ? ' open' : ''}`} aria-hidden>
-          ⌄
+          <Icon name="down" size={18} />
         </span>
       </button>
       {open && <div className="section-body">{children}</div>}
@@ -109,14 +109,14 @@ export default function Home({ hub, setHub, age, setAge, favorites, onOpen, onRe
         </span>
         <h1>모두의 연애</h1>
         <button className="icon-btn" aria-label="검색">
-          🔍
+          <Icon name="search" size={20} />
         </button>
       </header>
 
       {/* 내 프로필 카드 — 프로토타입: 성별·나이를 임시로 입력받는다 (실서비스는 토스 로그인 성별·생년월일) */}
       <div className="me-card">
         <span className="me-avatar" aria-hidden>
-          👤
+          <Icon name="user" size={26} />
         </span>
         <span className="me-text">
           <strong>user_name</strong>
@@ -173,7 +173,7 @@ export default function Home({ hub, setHub, age, setAge, favorites, onOpen, onRe
         </section>
       )}
 
-      <Section icon="☆" title="즐겨찾기">
+      <Section icon="star" title="즐겨찾기">
         {favs.length === 0 ? (
           <p className="empty">자주 찾는 캐릭터를 즐겨찾기해 보세요</p>
         ) : (
@@ -195,13 +195,13 @@ export default function Home({ hub, setHub, age, setAge, favorites, onOpen, onRe
         );
       })}
 
-      <Section icon="✨" title="오늘의 고민">
+      <Section icon="heart" title="오늘의 고민">
         <div className="reco-scroll">
           {concerns.map((x, i) => (
             <button key={x} className={`reco-card${i === 1 ? ' violet' : ''}`} onClick={() => onTopic(x)}>
               <span className="reco-label">오늘의 고민</span>
               <strong>{x}</strong>
-              <span>이 고민 고르기 ›</span>
+              <span>이 고민 고르기</span>
             </button>
           ))}
         </div>

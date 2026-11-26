@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 import { SHOW_DEV } from '../lib/build-flags';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AI_NOTICE, postApi } from '../lib/ai/client';
@@ -98,7 +99,8 @@ export default function PersonalityPage({ hub, onType }: { hub: HubCharacter; on
           ))}
         </div>
         <button className="btn-text" disabled={index === 0} onClick={() => setIndex((i) => Math.max(0, i - 1))}>
-          ← 이전 문항
+          <Icon name="back" size={16} />
+          이전 문항
         </button>
       </div>
     );
