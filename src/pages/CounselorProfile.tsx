@@ -4,11 +4,13 @@
  *  - 사진은 object-fit: cover, 말풍선은 사진과 분리된 텍스트.
  *  - 원형 사진·이름·배지·소개는 사진과 시트의 경계에 걸쳐 함께 올라간다.
  *  - 대화 시작 버튼은 시트 콘텐츠의 맨 끝.
- * 명세에서 미정인 항목(임시 결정): 사진 높이 62vh → 168px / 고민 카드는 바로 전송 / 더보기 = 즐겨찾기·이어서 대화·저장된 분석 / 뒤로·닫기 = 홈.
+ * 치수·색·동작은 노션 첨부 goeun-profile-mockup.html 을 따른다: 사진 441px → 176px, 말풍선은 진행도 55%에서 사라짐,
+ *   원형 사진은 경계에 걸친 104px 에서 줄어든 사진 안쪽 64px 로.
+ * 목업에서도 미정인 항목(임시 결정): 고민 카드는 바로 전송 / 더보기 = 즐겨찾기·이어서 대화·저장된 분석 / 뒤로·닫기 = 홈.
  */
 import { useEffect, useRef, useState } from 'react';
 import type { HubCharacter } from '../App';
-import { avatarUrl, heroUrl, type Character, type ProfileAsk } from '../data/characters';
+import { avatarUrl, coverUrl, heroUrl, profilePhotoUrl, type Character, type ProfileAsk } from '../data/characters';
 import { Icon } from '../components/Icon';
 import { formatWhen } from '../lib/sessions/store';
 
@@ -25,14 +27,16 @@ interface Props {
   recent?: { title: string; when: number } | null;
 }
 
-const MIN_HERO = 168;
+const H0 = 441; // 첫 진입 사진 높이
+const H1 = 176; // 시트 확장 후 사진 높이
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 export default function CounselorProfile({ c, favorite, onToggleFavorite, onClose, onStart, onAsk, onResume, onAnalyses, recent = null }: Props) {
   const sc = c.showcase!;
   const root = useRef<HTMLDivElement>(null);
   const [menu, setMenu] = useState(false);
-  const hero = heroUrl(c);
-  const avatar = avatarUrl(c);
+  const hero = coverUrl(c) ?? heroUrl(c);
+  const avatar = profilePhotoUrl(c) ?? avatarUrl(c);
 
   // 스크롤 위치 → 사진 높이·말풍선 투명도 (CSS 변수만 바꾼다. 터치·휠·트랙패드가 같은 스크롤 위치를 쓴다)
   useEffect(() => {
@@ -41,13 +45,20 @@ export default function CounselorProfile({ c, favorite, onToggleFavorite, onClos
     let raf = 0;
     const apply = () => {
       raf = 0;
-      const full = Math.max(MIN_HERO + 120, Math.round(el.clientHeight * 0.62));
-      const range = full - MIN_HERO;
-      const p = Math.min(1, Math.max(0, el.scrollTop / range));
-      el.style.setProperty('--hero-full', `${full}px`);
-      el.style.setProperty('--hero-h', `${full - range * p}px`);
-      el.style.setProperty('--bubble-o', String(Math.max(0, 1 - p * 1.6)));
-      el.classList.toggle('expanded', p >= 1);
+      const range = H0 - H1;
+      const top = Math.max(0, el.scrollTop);
+      const p = Math.min(1, top / range); // 0: 첫 진입, 1: 시트 확장
+      const size = lerp(104, 64, p);
+      const o = Math.min(1, Math.max(0, 1 - p / 0.55));
+      const set = (k: string, v: string) => el.style.setProperty(k, v);
+      set('--hero-h', `${H0 - Math.min(top, range)}px`);
+      set('--bubble-o', String(o));
+      set('--bubble-y', `${-24 * p}px`);
+      set('--bubble-v', o === 0 ? 'hidden' : 'visible');
+      set('--av', `${size}px`);
+      set('--av-b', `${lerp(-29, 12, p)}px`);
+      set('--av-bw', `${lerp(4, 3, p)}px`);
+      set('--who-left', `${size + lerp(24, 14, p)}px`);
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(apply);
@@ -66,7 +77,7 @@ export default function CounselorProfile({ c, favorite, onToggleFavorite, onClos
     <div className="cp" ref={root} role="dialog" aria-label={`${c.name} 프로필`}>
       <header className="cp-head">
         <button className="cp-back" onClick={onClose} aria-label="뒤로">
-          <Icon name="back" size={22} />
+          <Icon name="back" size={24} strokeWidth={2} />
         </button>
         <strong>모두의 연애</strong>
         <span className="cp-head-actions">
@@ -100,12 +111,14 @@ export default function CounselorProfile({ c, favorite, onToggleFavorite, onClos
       </header>
 
       <div className="cp-hero">
-        <div className="cp-photo">{hero ? <img src={hero} alt="" /> : <span style={{ background: c.bg }} />}</div>
+        <div className="cp-photo">{hero ? <img src={hero} alt="" style={{ objectPosition: sc.photoPos }} /> : <span style={{ background: c.bg }} />}</div>
         <div className="cp-bubbles" aria-label="대화 예시">
           <p className="cp-b me">{sc.sample.user}</p>
-          <p className="cp-b">{sc.sample.reply}</p>
-          <p className="cp-b quote">{sc.sample.quote}</p>
-          <p className="cp-b">{sc.sample.after}</p>
+          <div className="cp-stack">
+            <p className="cp-b">{sc.sample.reply}</p>
+            <p className="cp-b quote">{sc.sample.quote}</p>
+            <p className="cp-b">{sc.sample.after}</p>
+          </div>
         </div>
         <div className="cp-id">
           <span className="cp-avatar">{avatar ? <img src={avatar} alt="" /> : c.emoji}</span>
@@ -126,7 +139,7 @@ export default function CounselorProfile({ c, favorite, onToggleFavorite, onClos
             {c.does.map((d) => (
               <li key={d}>
                 <i aria-hidden>
-                  <Icon name="check" size={12} />
+                  <Icon name="check" size={12} strokeWidth={3} />
                 </i>
                 {d}
               </li>
@@ -139,16 +152,16 @@ export default function CounselorProfile({ c, favorite, onToggleFavorite, onClos
             {(c.asks ?? []).map((a) => (
               <button key={a.label} className="cp-ask" onClick={() => onAsk(c, a)}>
                 <span className="cp-ask-icon">
-                  <Icon name={a.icon} size={20} />
+                  <Icon name={a.icon} size={24} strokeWidth={2} />
                 </span>
                 <span className="cp-ask-label">{a.label}</span>
-                <Icon name="next" size={18} />
+                <Icon name="next" size={20} strokeWidth={2.2} />
               </button>
             ))}
           </div>
         </section>
         <div className="cp-note">
-          <Icon name="info" size={20} />
+          <Icon name="info" size={20} strokeWidth={2} />
           <p>
             <strong>{sc.note.title}</strong>
             {sc.note.body}

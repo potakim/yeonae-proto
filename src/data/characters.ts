@@ -7,7 +7,7 @@ import { PERSONAS, genderOfHub, personaName, type PersonaId } from '../lib/ai/pe
 export type Category = 'counsel' | 'kakao' | 'trait' | 'saju' | 'intro';
 
 export interface ProfileAsk {
-  icon: 'heart' | 'users' | 'refresh' | 'chat' | 'calendar' | 'send' | 'info';
+  icon: 'heart' | 'users' | 'refresh' | 'chat' | 'calendar' | 'send' | 'info' | 'message' | 'handshake' | 'heartHandshake';
   label: string;
   /** 대화의 첫 메시지로 보낼 문장 (없으면 label) */
   text?: string;
@@ -37,6 +37,8 @@ export interface Character {
     sample: { user: string; reply: string; quote: string; after: string };
     /** 안내 박스 */
     note: { title: string; body: string };
+    /** 배경 사진(-cover.webp)의 크롭 기준점 (object-position) */
+    photoPos: string;
   };
   does: string[];
   when: string[];
@@ -88,14 +90,15 @@ export const CHARACTERS: Character[] = [
     when: ['뭐부터 물어봐야 할지 모를 때', '싸우고 나서 어떻게 풀지 막막할 때'],
     chips: ['갈등 조율', '서운함', '장기 연애', '결혼한 선배'],
     asks: [
-      { icon: 'refresh', label: '같은 문제로 자꾸 싸워요' },
-      { icon: 'chat', label: '서운한 걸 어떻게 말하죠?' },
-      { icon: 'heart', label: '사과만 하고 달라지는 게 없어요' },
+      { icon: 'message', label: '같은 문제로 자꾸 싸워요' },
+      { icon: 'handshake', label: '서운한 걸 어떻게 말하죠?' },
+      { icon: 'heartHandshake', label: '사과만 하고 달라지는 게 없어요' },
     ],
     showcase: {
       short: '기훈',
       sample: { user: '남자친구가 요즘 연락을 잘 안 해요.', reply: '서운했겠다. 근데 연락이 준 거랑 마음이 식은 건 달라요.', quote: '“요즘 연락이 줄어서 좀 멀어진 느낌이 들어.”', after: '이렇게 말해 보고, 그다음 반응을 같이 봐요.' },
       note: { title: '무료로 대화할 수 있어요', body: '대화 원문은 30일 뒤 자동으로 지워져요. AI 의견이며 전문 상담을 대신하지 않아요.' },
+      photoPos: '50% 28%',
     },
     pricing: '하루 15번 대화 무료',
     image: 'hub-m',
@@ -116,14 +119,15 @@ export const CHARACTERS: Character[] = [
     when: ['뭐부터 물어봐야 할지 모를 때', '말은 하고 싶은데 싸우긴 싫을 때'],
     chips: ['할 말 하는 법', '현실 전략', '결혼 준비', '직장·사람 관계'],
     asks: [
-      { icon: 'chat', label: '나만 먼저 연락하는 것 같아요' },
-      { icon: 'users', label: '싸우지 않고 마음을 전하고 싶어요' },
-      { icon: 'heart', label: '결혼 이야기를 꺼내기 어려워요' },
+      { icon: 'message', label: '나만 먼저 연락하는 것 같아요' },
+      { icon: 'handshake', label: '싸우지 않고 마음을 전하고 싶어요' },
+      { icon: 'heartHandshake', label: '결혼 이야기를 꺼내기 어려워요' },
     ],
     showcase: {
       short: '고은',
       sample: { user: '매번 제가 언제 볼지 물어보는 게 싫어요.', reply: '그쪽에서 먼저 날짜를 꺼내줬으면 했던 거구나. 이렇게 보내보는 건 어때?', quote: '“다음엔 네가 되는 날 먼저 알려줄 수 있어?”', after: '다음 약속은 먼저 잡아줬으면 좋겠다고 말해도 돼.' },
       note: { title: '대화 원문은 30일 뒤 자동으로 지워져요', body: 'AI 캐릭터의 의견이에요. 전문 상담이나 의료 진단을 대신하지 않아요.' },
+      photoPos: '60% 35%',
     },
     pricing: '하루 15번 대화 무료',
     image: 'hub-f',
@@ -143,14 +147,15 @@ export const CHARACTERS: Character[] = [
     when: ['내가 예민한 건지 헷갈릴 때', '상황을 객관적으로 보고 싶을 때'],
     chips: ['썸', '연락', '사실 확인', '현실 점검'],
     asks: [
-      { icon: 'chat', label: '제가 잘못한 건가요?' },
-      { icon: 'users', label: '상대 행동이 이해가 안 돼요' },
-      { icon: 'heart', label: '썸인지 아닌지 헷갈려요' },
+      { icon: 'message', label: '제가 잘못한 건가요?' },
+      { icon: 'handshake', label: '상대 행동이 이해가 안 돼요' },
+      { icon: 'heartHandshake', label: '썸인지 아닌지 헷갈려요' },
     ],
     showcase: {
       short: '소은',
       sample: { user: '면접 봤다고 했는데 어땠냐고 안 물어봐요.', reply: '아, 진짜 서운한 건 그거였네요. 돌려 말하지 말고 이렇게요.', quote: '“오늘 면접 어땠는지 먼저 물어봐 줬으면 했어.”', after: '왜 안 물어봤냐고 따지는 것보다 이게 더 잘 전해져요.' },
       note: { title: '대화 원문은 30일 뒤 자동으로 지워져요', body: 'AI 캐릭터의 의견이에요. 전문 상담이나 의료 진단을 대신하지 않아요.' },
+      photoPos: '50% 40%',
     },
     pricing: '하루 15번 대화 무료',
     image: 'soeun',
@@ -170,14 +175,15 @@ export const CHARACTERS: Character[] = [
     when: ['남자 마음을 모르겠을 때', '이 관계가 나한테 괜찮은지 헷갈릴 때'],
     chips: ['남자 입장', '썸', '재회', '현실 점검'],
     asks: [
-      { icon: 'send', label: '연락이 줄었는데 마음이 식었을까요?' },
-      { icon: 'chat', label: '제가 너무 예민한 걸까요?' },
-      { icon: 'heart', label: '이 관계, 이대로 괜찮을까요?' },
+      { icon: 'message', label: '연락이 줄었는데 마음이 식었을까요?' },
+      { icon: 'handshake', label: '제가 너무 예민한 걸까요?' },
+      { icon: 'heartHandshake', label: '이 관계, 이대로 괜찮을까요?' },
     ],
     showcase: {
       short: '성현',
       sample: { user: '전 애인한테 “잘 지내?”라고 왔어요.', reply: '다시 만날 마음이 없다면, 이 정도로 답해도 돼요.', quote: '“응, 잘 지내. 너도 잘 지냈으면 좋겠어.”', after: '끝에 “너는?”을 안 붙여도 반갑게 인사할 수 있어요.' },
       note: { title: '대화 원문은 30일 뒤 자동으로 지워져요', body: 'AI 캐릭터의 의견이에요. 전문 상담이나 의료 진단을 대신하지 않아요.' },
+      photoPos: '50% 42%',
     },
     pricing: '하루 15번 대화 무료',
     image: 'seonghyun',
@@ -335,5 +341,8 @@ export function byId(id: string): Character | undefined {
   return CHARACTERS.find((c) => c.id === id);
 }
 
+/** 프로필 화면 전용 사진 (8차 리뷰 「캐릭터 별 비주얼」): 배경 사진과 원형 프로필 사진. 목록의 작은 아바타는 기존 얼굴 사진을 그대로 쓴다 */
+export const coverUrl = (c: Character) => (c.image && c.showcase ? `/characters/${c.image}-cover.webp` : null);
+export const profilePhotoUrl = (c: Character) => (c.image && c.showcase ? `/characters/${c.image}-profile.webp` : null);
 export const avatarUrl = (c: Character) => (c.image ? `/characters/${c.image}-avatar.webp` : null);
 export const heroUrl = (c: Character) => (c.image ? `/characters/${c.image}-hero.webp` : null);

@@ -3181,12 +3181,24 @@ input[type='file'] {
   color: var(--text-3);
 }
 
-/* ── 상담 캐릭터 프로필 (8차 리뷰 2026-11-26) ── */
+/* ── 상담 캐릭터 프로필 (8차 리뷰 2026-11-26) — 치수·색은 goeun-profile-mockup.html 기준 ── */
 .cp {
-  --hero-full: 62vh;
-  --hero-h: 62vh;
+  --header-h: 56px;
+  --photo-max: 441px;
+  --photo-min: 176px;
+  --hero-h: 441px;
   --bubble-o: 1;
-  --cp-sheet: #fcf5fd;
+  --bubble-y: 0px;
+  --bubble-v: visible;
+  --av: 104px;
+  --av-b: -29px;
+  --av-bw: 4px;
+  --who-left: 128px;
+  --purple: #a94fcd;
+  --purple-deep: #9b3fc4;
+  --ink: #4a2138;
+  --ink-sub: #7a6270;
+  --cp-sheet: #fdf7fc;
   position: fixed;
   inset: 0;
   margin: 0 auto;
@@ -3194,55 +3206,64 @@ input[type='file'] {
   z-index: 30;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-width: none;
   background: var(--cp-sheet);
+  color: var(--ink);
   animation: slideUp 0.22s ease;
+}
+.cp::-webkit-scrollbar {
+  display: none;
+}
+.cp .line-icon {
+  margin: 0;
+  vertical-align: 0;
 }
 .cp-head {
   position: sticky;
   top: 0;
   z-index: 4;
-  height: 52px;
+  height: var(--header-h);
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 12px 0 8px;
+  padding: 0 12px;
   background: #fff;
+  color: #191f28;
 }
 .cp-head strong {
   flex: 1;
-  font-size: 17px;
+  font-size: 16px;
+  font-weight: 700;
 }
 .cp-back {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
-}
-.cp-head .line-icon {
-  margin: 0;
+  margin-right: 2px;
 }
 .cp-head-actions {
   display: flex;
   align-items: center;
-  height: 34px;
+  height: 32px;
   padding: 0 4px;
-  border-radius: 999px;
-  background: #f2f3f5;
+  border-radius: 16px;
+  background: #f2f4f6;
+  color: #4e5968;
 }
 .cp-head-actions button {
-  width: 36px;
-  height: 34px;
+  width: 34px;
+  height: 32px;
   display: grid;
   place-items: center;
 }
 .cp-head-actions i {
   width: 1px;
   height: 14px;
-  background: #d5d8dc;
+  background: #d1d6db;
 }
 .cp-menu {
   position: absolute;
-  top: 48px;
+  top: 50px;
   right: 12px;
   min-width: 180px;
   padding: 6px;
@@ -3257,260 +3278,278 @@ input[type='file'] {
   text-align: left;
   font-size: 14px;
   border-radius: 8px;
+  color: #191f28;
 }
 .cp-menu button:disabled {
-  color: var(--text-3);
+  color: #b0b8c1;
 }
+/* 사진 프레임: 위에 붙어 있고 높이만 줄어든다. 줄어든 만큼 아래 여백으로 채워 본문은 스크롤 속도 그대로 올라온다 */
 .cp-hero {
   position: sticky;
-  top: 52px;
+  top: var(--header-h);
   z-index: 3;
   height: var(--hero-h);
-  margin-bottom: calc(var(--hero-full) - var(--hero-h));
-}
-/* 원형 사진이 시트 위로 걸치는 만큼, 고정된 뒤 아래로 지나가는 본문을 가려 준다 */
-.cp-hero::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 100%;
-  height: 46px;
-  background: linear-gradient(var(--cp-sheet) 78%, rgba(252, 245, 253, 0));
+  margin-bottom: calc(var(--photo-max) - var(--hero-h));
   pointer-events: none;
 }
 .cp-photo {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: #2b2530;
+  background: #b8b8bf;
 }
 .cp-photo img,
 .cp-photo span {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 22%;
+  filter: saturate(0.7);
   display: block;
 }
 .cp-photo::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.72) 100%);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.18) 62%, rgba(0, 0, 0, 0.55) 100%);
 }
 .cp-bubbles {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  padding: 22px 16px 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
   opacity: var(--bubble-o);
-  pointer-events: none;
+  transform: translateY(var(--bubble-y));
+  visibility: var(--bubble-v);
 }
 .cp-b {
   margin: 0;
-  max-width: 78%;
-  padding: 9px 14px;
-  border-radius: 16px;
+  max-width: min(256px, 78%);
+  padding: 8px 10px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.94);
-  color: #2a2233;
+  color: var(--ink);
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.35;
   word-break: keep-all;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  overflow-wrap: break-word;
 }
 .cp-b.me {
-  align-self: flex-end;
-  background: #8e3fc8;
+  position: absolute;
+  top: 69px;
+  right: 12px;
+  max-width: min(260px, 72%);
+  padding: 10px 20px;
+  background: var(--purple-deep);
   color: #fff;
-  margin-bottom: 8px;
+  font-size: 12px;
+}
+.cp-stack {
+  position: absolute;
+  top: 152px;
+  left: 22px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 11px;
 }
 .cp-b.quote {
-  background: #fde3f5;
-  border: 2px solid #e9a8ee;
-  font-size: 17px;
-  font-weight: 800;
-  line-height: 1.35;
+  padding: 9px 16px;
+  background: #ffd7f5;
+  border: 1px solid #9b4dca;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
 }
 .cp-id {
   position: absolute;
-  left: 16px;
+  left: 12px;
   right: 16px;
-  bottom: -36px;
-  z-index: 1;
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
+  bottom: 0;
+  height: 0;
 }
 .cp-avatar {
-  flex-shrink: 0;
-  width: 96px;
-  height: 96px;
+  position: absolute;
+  left: 0;
+  bottom: var(--av-b);
+  width: var(--av);
+  height: var(--av);
   border-radius: 50%;
-  border: 3px solid #fff;
+  border: var(--av-bw) solid #fff;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
   overflow: hidden;
   background: #eee;
   display: grid;
   place-items: center;
-  font-size: 44px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  font-size: 40px;
 }
 .cp-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 .cp-id-text {
-  min-width: 0;
-  padding-top: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+  position: absolute;
+  left: var(--who-left);
+  right: 0;
+  bottom: 13px;
   color: #fff;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 .cp-name {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 .cp-name strong {
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
 }
 .cp-name em {
   font-style: normal;
   font-size: 11px;
   font-weight: 700;
+  line-height: 13px;
   padding: 3px 8px;
-  border-radius: 999px;
-  background: #9b45d6;
-  text-shadow: none;
+  border-radius: 10px;
+  background: var(--purple);
 }
 .cp-tag {
-  font-size: 13px;
-  line-height: 1.35;
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   word-break: keep-all;
 }
 .cp-sheet {
   position: relative;
-  padding: 58px 20px calc(28px + env(safe-area-inset-bottom));
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  min-height: calc(100% - var(--header-h) - var(--photo-min));
+  padding: 47px 20px calc(28px + env(safe-area-inset-bottom));
+  background: var(--cp-sheet);
 }
 .cp-sheet h3 {
-  margin: 0 0 12px;
-  font-size: 18px;
-  color: #33203d;
+  margin: 0 0 11px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.cp-sheet h3.underlined {
+  margin: 16px 0 12px;
+  font-size: 20px;
+  line-height: 24px;
 }
 .cp-sheet h3.underlined::after {
   content: '';
   display: block;
-  width: 34px;
-  height: 3px;
-  margin-top: 6px;
+  width: 40px;
+  height: 4px;
+  margin-top: 8px;
   border-radius: 2px;
-  background: #9b45d6;
+  background: var(--purple);
 }
 .cp-does {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
 }
 .cp-does li {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 15px;
-  color: #3c3345;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  line-height: 20px;
 }
 .cp-does i {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
+  flex: none;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: #9b45d6;
+  background: #9b4dca;
   color: #fff;
   display: grid;
   place-items: center;
 }
-.cp-does .line-icon,
-.cp-ask .line-icon,
-.cp-note .line-icon {
-  margin: 0;
-  stroke-width: 2.6;
-}
-.cp-ask .line-icon,
-.cp-note .line-icon {
-  stroke-width: 1.8;
-}
-.cp-asks {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
 .cp-ask {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
-  padding: 13px 14px;
-  border-radius: 16px;
-  border: 1px solid #efe1f5;
+  min-height: 64px;
+  margin-bottom: 8px;
+  padding: 12px 14px 12px 12px;
+  border-radius: 14px;
+  border: 1px solid #efdcea;
   background: #fff;
   text-align: left;
-  color: #9b45d6;
+  color: var(--purple);
+  transition:
+    transform 0.12s ease,
+    background 0.12s ease;
+}
+.cp-ask:active {
+  transform: scale(0.985);
+  background: #fcf6fb;
+}
+.cp-ask:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
 }
 .cp-ask-icon {
-  flex-shrink: 0;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: #f1e3fa;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #f3e8fa;
   display: grid;
   place-items: center;
 }
 .cp-ask-label {
   flex: 1;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
-  color: #33203d;
+  color: var(--ink);
   word-break: keep-all;
 }
 .cp-note {
   display: flex;
   gap: 10px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: #f1eafc;
-  color: #7b4bb8;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f5f0fc;
+  color: #9b4dca;
+}
+.cp-note .line-icon {
+  flex: none;
+  margin-top: 1px;
 }
 .cp-note p {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #6b6275;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-sub);
+  word-break: keep-all;
 }
 .cp-note strong {
   display: block;
-  font-size: 14px;
-  color: #33203d;
+  margin-bottom: 3px;
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--ink);
 }
 .cp-cta {
+  display: block;
   width: 100%;
-  padding: 16px;
+  height: 56px;
+  margin-top: 32px;
   border-radius: 16px;
-  background: var(--brand-pink);
+  background: #ef3898;
   color: #fff;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 700;
+}
+.cp-cta:active {
+  filter: brightness(0.95);
 }
