@@ -113,7 +113,7 @@ export default function CharacterProfile({ c, hub, favorite, onToggleFavorite, o
                 생성형 AI가 쓴 답변이에요. 재미와 참고용으로 봐 주세요.
                 <small>
                   {c.image && '캐릭터 이미지는 AI로 생성한 가상 인물이에요.'}
-                  {c.placeholder && ' 이 캐릭터의 페르소나·이미지는 준비 중이에요.'}
+                  {c.placeholder && (c.image ? ' 이 캐릭터의 대화 기능은 준비 중이에요.' : ' 이 캐릭터의 페르소나·이미지는 준비 중이에요.')}
                 </small>
               </>
             )}

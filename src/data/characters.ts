@@ -235,6 +235,7 @@ export const CHARACTERS: Character[] = [
     when: ['나는 왜 매번 이럴까 싶을 때', '내 연애 패턴을 알고 싶을 때'],
     chips: ['연애 성향', '애착 유형', '강점', '조심할 점'],
     pricing: '문항·채점 무료 · 해석 15크레딧',
+    image: 'teacher', // 노션 선생님 페이지 사진 (2026-11-26)
     emoji: '📝',
     bg: 'var(--avatar-yellow)',
     screen: 'personality',
