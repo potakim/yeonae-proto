@@ -13,6 +13,7 @@ import { nameOf, type Character } from '../data/characters';
 import { Avatar } from '../components/CharacterRow';
 import type { Evidence } from '../lib/ai/saju-chat';
 import type { SajuInput } from '../lib/saju';
+import { loadSpeech, speechParam } from '../lib/speech';
 
 interface Msg {
   role: 'user' | 'assistant';
@@ -179,6 +180,7 @@ export default function ChatPage({
         memo,
         shownCards,
         ...(birth ? { birth } : {}),
+        ...speechParam(loadSpeech()),
         messages: next.map(({ role, content }) => ({ role, content })),
       });
       const all: Msg[] = [...next, { role: 'assistant', content: r.reply, card: r.card, help: r.safety?.help ?? null, ...(r.evidence?.length ? { evidence: r.evidence } : {}) }];

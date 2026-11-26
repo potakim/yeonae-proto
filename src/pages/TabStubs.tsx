@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { SPEECH_OPTIONS, loadSpeech, saveSpeech, type SpeechSetting } from '../lib/speech';
 import { SHOW_DEV } from '../lib/build-flags';
 import type { HubCharacter } from '../App';
 import { CHARACTERS, nameOf, type Character } from '../data/characters';
@@ -63,6 +65,7 @@ export function IntroTab() {
 
 export function MyTab() {
   const store = useSessionStore();
+  const [speech, setSpeech] = useState<SpeechSetting>(loadSpeech);
   const intro = isOn('intro_tab');
   const analyses = store.listAnalyses();
   const sessions = store.listSessions();
@@ -76,6 +79,26 @@ export function MyTab() {
             <span className="chev">›</span>
           </button>
         ))}
+      </div>
+      <div className="card">
+        <p className="card-title">말투</p>
+        <div className="segmented" role="radiogroup" aria-label="말투">
+          {SPEECH_OPTIONS.map((o) => (
+            <button
+              key={o.value}
+              role="radio"
+              aria-checked={speech === o.value}
+              className={speech === o.value ? 'active' : ''}
+              onClick={() => {
+                saveSpeech(o.value);
+                setSpeech(o.value);
+              }}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+        <p className="hint">존댓말이나 반말을 고르면 상담 캐릭터와 서화가 그 말투로 답해요. 첫 인사말과 타로는 캐릭터 기본 말투 그대로예요.</p>
       </div>
       <div className="card dev-card">
         <p className="card-title">저장된 분석 ({analyses.length})</p>

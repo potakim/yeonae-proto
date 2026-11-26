@@ -64,10 +64,13 @@ describe('페르소나 · 캐릭터 데이터', () => {
     expect(personaBlock(PERSONAS.seohwa)).not.toContain('memo.pref');
   });
 
-  it('기훈: 여성은 해요체, 남성은 반말, 성별을 모르면 해요체. 성별에 맞는 예시만 들어간다', () => {
+  it('기훈: 여성·남성 모두 반말(11/26 개정, 여성은 더 부드럽게), 성별을 모르면 해요체. 성별에 맞는 예시만 들어간다', () => {
     const gihoon = PERSONAS['hub-m'];
-    expect(pick(gihoon.tone, 'female')).toContain('-요체');
-    expect(pick(gihoon.tone, 'female')).toContain("'야', '너', '네가'로 부르지 않는다");
+    expect(pick(gihoon.tone, 'female')).toContain('편안하고 친근한 반말을 처음부터 끝까지');
+    expect(pick(gihoon.tone, 'female')).toContain("'야'로 부르거나 면박을 주지 않고");
+    // 여성 사용자용 예시·샘플의 기훈 대사는 반말로 끝난다
+    for (const d of gihoon.fewShots.filter((d) => d.gender === 'female')) for (const t of d.turns) expect(t.assistant, t.user).not.toMatch(/(요|니다)[.?!]?$/);
+    for (const x of (gihoon.samples as { female: string[] }).female) expect(x).not.toMatch(/(요|니다)[.?!]?$/);
     expect(pick(gihoon.tone, 'male')).toContain('반말');
     expect(pick(gihoon.tone, null)).toContain('성별을 모르면 친근한 해요체');
     const f = personaBlock(gihoon, { gender: 'female', age: null });
@@ -81,6 +84,19 @@ describe('페르소나 · 캐릭터 데이터', () => {
     expect(m).toContain('아, 형이 잘못 짚었네.');
     expect(f).toContain('별거 아닌 얘기도 난 반갑거든');
     expect(f).not.toContain('아, 형이 잘못 짚었네.');
+    expect(f).toContain('이 정도면 어때? 왜 안 했는지 따지기보다');
+  });
+
+  it('말투 설정(11/26): 존댓말·반말을 고르면 캐릭터 기본 말투보다 우선한다는 줄이 붙는다', () => {
+    const base = personaBlock(PERSONAS['hub-f'], { gender: 'female', age: 27 });
+    const formal = personaBlock(PERSONAS['hub-f'], { gender: 'female', age: 27, speech: 'formal' });
+    const casual = personaBlock(PERSONAS.seonghyun, { gender: 'male', age: 27, speech: 'casual' });
+    expect(base).not.toContain("설정에서 '존댓말'");
+    expect(formal).toContain("사용자가 설정에서 '존댓말'을 골랐어");
+    expect(casual).toContain("사용자가 설정에서 '반말'을 골랐어");
+    // 서화(상담 캐릭터가 아님)에도 적용
+    expect(chatSystem('형', {}, EMPTY_MEMO, [], 1, PERSONAS.seohwa, null, null, 'formal')).toContain("설정에서 '존댓말'");
+    expect(chatSystem('형', {}, EMPTY_MEMO, [], 1, PERSONAS.seohwa)).not.toContain("설정에서 '존댓말'");
   });
 
   it('고은: 처음부터 끝까지 부드러운 반말(11/25 개정), 예비신부, 대인관계까지, 연령대별 해석', () => {

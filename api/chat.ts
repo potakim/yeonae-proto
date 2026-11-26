@@ -1,6 +1,6 @@
 /**
  * POST /api/chat — 캐릭터 채팅, 경량 모델.
- * 본문: { hub, character?, userAge?, messages: [{ role, content }], memo?: ChatMemo, shownCards?: Card[], profile?: { type?, dayPillar? }, birth?: SajuInput }
+ * 본문: { hub, character?, userAge?, messages: [{ role, content }], memo?: ChatMemo, shownCards?: Card[], profile?: { type?, dayPillar? }, birth?: SajuInput, speech?: 'formal' | 'casual' }
  * character 가 seohwa 면 birth 가 필수다. 서버가 사주를 계산해 프롬프트에 넣고, 답에 쓰인 근거 카드(evidence)를 계산값으로 만들어 돌려준다.
  * hub(성별)·userAge 는 실서비스에서 토스 로그인 정보로 서버가 채운다. 프로토타입은 브라우저가 보낸 값을 쓴다.
  * 대화 내용은 저장하지 않는다 (브라우저가 대화·메모를 들고 있다가 매번 보냄).
@@ -59,6 +59,8 @@ export async function handleChat(request: Request, deps: HandlerDeps = {}): Prom
   const shown: Card[] = Array.isArray(body.shownCards) ? (body.shownCards as unknown[]).filter((c): c is Card => CARDS.includes(c as Card) && c !== 'none') : [];
   const userTurns = msgs.filter((m) => m.role === 'user').length;
   let userAge = validAge(body.userAge);
+  // 말투 설정 (마이 > 말투). 실서비스: 사용자 설정에서 서버가 읽는다
+  const speech = body.speech === 'formal' || body.speech === 'casual' ? body.speech : null;
 
   // 서화: 서버가 생년월일로 사주를 직접 계산한다 (브라우저가 보낸 간지·풀이는 받지 않는다). 생년월일은 저장하지 않는다.
   let saju: SajuPayload | null = null;
@@ -93,7 +95,7 @@ export async function handleChat(request: Request, deps: HandlerDeps = {}): Prom
   type Out = { category: Category; focus: string; memo: ChatMemo; reply: string; card: Card; evidence?: unknown };
   const args = {
     model,
-    system: chatSystem(hub, safeProfile, memo, shown, userTurns, persona, userAge, saju ? sajuSection(saju) : null),
+    system: chatSystem(hub, safeProfile, memo, shown, userTurns, persona, userAge, saju ? sajuSection(saju) : null, speech),
     history: msgs.slice(0, -1),
     user: last.content,
     schema: saju ? sajuChatSchema : chatSchema,

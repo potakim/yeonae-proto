@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import Home from './pages/Home';
 import SeohwaPage from './pages/SeohwaPage';
+import CounselorProfile from './pages/CounselorProfile';
 import PersonalityPage from './pages/PersonalityPage';
 import ChatPage from './pages/ChatPage';
 import CompatPage from './pages/CompatPage';
@@ -192,23 +193,27 @@ function Shell() {
         {screen === 'detective' && <DetectivePage />}
       </main>
       {inTabRoot && <BottomTab active={tab} onChange={setTab} />}
-      {profile && (
-        <CharacterProfile
-          c={profile}
-          hub={hub}
-          favorite={favorites.has(profile.id)}
-          onToggleFavorite={favorites.toggle}
-          onClose={() => setProfile(null)}
-          onStart={startWith}
-          onAsk={(c, ask) => (ask.screen ? startWith(c, ask.screen) : startTopic(c, ask.text ?? ask.label))}
-          onResume={resumeWith}
-          onAnalyses={(c) => setAnalysesFor(c)}
-          recent={(() => {
-            const last = store.listSessions(profile.id)[0];
-            return last ? { title: last.title, when: last.updatedAt } : null;
-          })()}
-        />
-      )}
+      {profile &&
+        (() => {
+          const P = profile.showcase ? CounselorProfile : CharacterProfile;
+          return (
+            <P
+              c={profile}
+              hub={hub}
+              favorite={favorites.has(profile.id)}
+              onToggleFavorite={favorites.toggle}
+              onClose={() => setProfile(null)}
+              onStart={startWith}
+              onAsk={(c, ask) => (ask.screen ? startWith(c, ask.screen) : startTopic(c, ask.text ?? ask.label))}
+              onResume={resumeWith}
+              onAnalyses={(c) => setAnalysesFor(c)}
+              recent={(() => {
+                const last = store.listSessions(profile.id)[0];
+                return last ? { title: last.title, when: last.updatedAt } : null;
+              })()}
+            />
+          );
+        })()}
       {sheet && <SessionSheet c={sheet} onClose={() => setSheet(null)} onStart={(s) => openSession(sheet, s)} />}
       {analysesFor && <AnalysesSheet sourceCharacter={analysesFor.id} onClose={() => setAnalysesFor(null)} />}
     </div>

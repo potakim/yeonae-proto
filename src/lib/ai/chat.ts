@@ -1,4 +1,4 @@
-import { PERSONAS, genderOfHub, personaBlock, pick, validAge, type Persona } from './personas.js';
+import { PERSONAS, genderOfHub, personaBlock, pick, validAge, type Persona, type Speech } from './personas.js';
 
 /**
  * 캐릭터 채팅 — 안전 장치 + 프롬프트 + 소개 카드.
@@ -10,7 +10,7 @@ import { PERSONAS, genderOfHub, personaBlock, pick, validAge, type Persona } fro
  *  - 키워드 규칙은 안전망으로만 남긴다: 명백한 현재형 자해·자살 표현이면 모델 판정과 무관하게 도움 안내를 붙이고,
  *    모델을 부를 수 없을 때는 고정 문구로 답한다.
  */
-export const CHAT_PROMPT_VERSION = 'chat-2026-11-25.1';
+export const CHAT_PROMPT_VERSION = 'chat-2026-11-26.1';
 export type Hub = '형' | '언니';
 
 export const CARDS = ['none', 'kakao', 'compat', 'fortune', 'personality'] as const;
@@ -120,6 +120,8 @@ export function chatSystem(
   userAge: number | null = null,
   /** 서화 채팅 전용: 서버가 계산한 사주 섹션 (saju-chat.ts 의 sajuSection). 있으면 사주를 먼저 꺼내도 된다 */
   saju: string | null = null,
+  /** 사용자가 설정에서 고른 말투 (없으면 캐릭터 기본) */
+  speech: Speech | null = null,
 ): string {
   const p = [profile.type ? `성격유형 ${profile.type}` : null, profile.dayPillar ? `${profile.dayPillar} 일주` : null].filter(Boolean).join(', ');
   const cardRule =
@@ -136,7 +138,7 @@ export function chatSystem(
       : persona.scope === 'open'
         ? '- 인사·잡담·일반 질문에는 의도에 맞춰 친구처럼 그냥 답해. 모든 대화를 연애 상담으로 몰지 말고, 상담을 강요하지 마. 고민 얘기가 나오면 그때 네 방식대로 봐 줘.'
         : '- 연애와 상관없는 질문(코딩·숙제·뉴스 등)엔 한 문장으로 가볍게 받아 주고, 연애 이야기로 부드럽게 돌아와.';
-  return `${personaBlock(persona, { gender, age: validAge(userAge) })}
+  return `${personaBlock(persona, { gender, age: validAge(userAge), speech })}
 
 <memo>
 지금까지 사용자가 직접 말한 내용 (이게 대화의 기준이야)

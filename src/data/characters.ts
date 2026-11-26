@@ -7,7 +7,7 @@ import { PERSONAS, genderOfHub, personaName, type PersonaId } from '../lib/ai/pe
 export type Category = 'counsel' | 'kakao' | 'trait' | 'saju' | 'intro';
 
 export interface ProfileAsk {
-  icon: 'heart' | 'users' | 'refresh' | 'chat' | 'calendar' | 'send';
+  icon: 'heart' | 'users' | 'refresh' | 'chat' | 'calendar' | 'send' | 'info';
   label: string;
   /** 대화의 첫 메시지로 보낼 문장 (없으면 label) */
   text?: string;
@@ -29,6 +29,15 @@ export interface Character {
   chips?: string[];
   /** 프로필의 질문 줄 — 누르면 그 문장으로 대화를 시작하거나(text) 다른 화면으로 간다(screen) */
   asks?: ProfileAsk[];
+  /** 상담 캐릭터 프로필 화면 (8차 리뷰 2026-11-26 「캐릭터 별 프로필 화면」) — 있으면 새 프로필 화면을 쓴다 */
+  showcase?: {
+    /** 부를 때 쓰는 이름 ("기훈은 이렇게 도와줘요", "기훈과 대화하기") */
+    short: string;
+    /** 사진 위 대화 예시 4개: 사용자 → 캐릭터 → 보낼 말(인용) → 캐릭터 */
+    sample: { user: string; reply: string; quote: string; after: string };
+    /** 안내 박스 */
+    note: { title: string; body: string };
+  };
   does: string[];
   when: string[];
   pricing: string;
@@ -73,16 +82,21 @@ export const CHARACTERS: Character[] = [
     hubFor: '형',
     category: 'counsel',
     roleLine: '표정이 안 좋아 보이는데, 무슨 일 있어?',
-    tagline: '결혼한 선배 형, 싸운 뒤 푸는 법을 같이 고민해요',
+    tagline: '기혼 선배 · 싸움보다 해결을 보는 조언',
     mbti: 'ESFJ',
-    does: ['고민을 끝까지 듣고 상황부터 같이 정리해요', '누가 이기느냐보다 싸움을 어떻게 끝낼지 같이 고민해요', '다른 캐릭터가 더 맞는 고민이면 연결해요'],
+    does: ['감정은 받아주고, 사실과 추측은 나눠서 봐요', '실제로 보낼 말과 행동을 하나씩 제안해요', '한 번의 실수와 반복되는 패턴을 구분해요'],
     when: ['뭐부터 물어봐야 할지 모를 때', '싸우고 나서 어떻게 풀지 막막할 때'],
     chips: ['갈등 조율', '서운함', '장기 연애', '결혼한 선배'],
     asks: [
-      { icon: 'refresh', label: '반복되는 다툼', text: '같은 문제로 자꾸 싸워요' },
-      { icon: 'chat', label: '서운함 전하기', text: '서운한 걸 어떻게 말할까요?' },
-      { icon: 'heart', label: '오래된 연애', text: '만나도 예전처럼 즐겁지 않아요' },
+      { icon: 'refresh', label: '같은 문제로 자꾸 싸워요' },
+      { icon: 'chat', label: '서운한 걸 어떻게 말하죠?' },
+      { icon: 'heart', label: '사과만 하고 달라지는 게 없어요' },
     ],
+    showcase: {
+      short: '기훈',
+      sample: { user: '남자친구가 요즘 연락을 잘 안 해요.', reply: '서운했겠다. 근데 연락이 준 거랑 마음이 식은 건 달라요.', quote: '“요즘 연락이 줄어서 좀 멀어진 느낌이 들어.”', after: '이렇게 말해 보고, 그다음 반응을 같이 봐요.' },
+      note: { title: '무료로 대화할 수 있어요', body: '대화 원문은 30일 뒤 자동으로 지워져요. AI 의견이며 전문 상담을 대신하지 않아요.' },
+    },
     pricing: '하루 15번 대화 무료',
     image: 'hub-m',
     emoji: '🧢',
@@ -96,16 +110,21 @@ export const CHARACTERS: Character[] = [
     hubFor: '언니',
     category: 'counsel',
     roleLine: '얘기가 좀 뒤죽박죽이어도 괜찮아. 천천히 들려줘',
-    tagline: '결혼 준비 중인 선배 언니, 싸우지 않고 할 말 하는 법을 알려 줘요',
+    tagline: '결혼 준비 중인 선배 · 내 편에서 해결 방법',
     mbti: 'ISFJ',
-    does: ['내 편에서 이야기를 끝까지 들어요', '정면으로 부딪히지 않고 원하는 걸 얻는 말을 같이 찾아요', '연애 말고 직장이나 사람 관계 고민도 괜찮아요'],
+    does: ['내 편에서 먼저 상황을 들어줘요', '정면으로 부딪히지 않는 대처법을 찾아요', '상대에게 보낼 문장을 같이 골라줘요'],
     when: ['뭐부터 물어봐야 할지 모를 때', '말은 하고 싶은데 싸우긴 싫을 때'],
     chips: ['할 말 하는 법', '현실 전략', '결혼 준비', '직장·사람 관계'],
     asks: [
-      { icon: 'chat', label: '서운함 전하기', text: '서운한 걸 어떻게 말할까요?' },
-      { icon: 'send', label: '답장 고민', text: '답장이 고민돼요' },
-      { icon: 'calendar', label: '앞으로의 계획', text: '앞으로의 계획이 서로 달라요' },
+      { icon: 'chat', label: '나만 먼저 연락하는 것 같아요' },
+      { icon: 'users', label: '싸우지 않고 마음을 전하고 싶어요' },
+      { icon: 'heart', label: '결혼 이야기를 꺼내기 어려워요' },
     ],
+    showcase: {
+      short: '고은',
+      sample: { user: '매번 제가 언제 볼지 물어보는 게 싫어요.', reply: '그쪽에서 먼저 날짜를 꺼내줬으면 했던 거구나. 이렇게 보내보는 건 어때?', quote: '“다음엔 네가 되는 날 먼저 알려줄 수 있어?”', after: '다음 약속은 먼저 잡아줬으면 좋겠다고 말해도 돼.' },
+      note: { title: '대화 원문은 30일 뒤 자동으로 지워져요', body: 'AI 캐릭터의 의견이에요. 전문 상담이나 의료 진단을 대신하지 않아요.' },
+    },
     pricing: '하루 15번 대화 무료',
     image: 'hub-f',
     emoji: '🎀',
@@ -118,16 +137,21 @@ export const CHARACTERS: Character[] = [
     name: '박소은',
     category: 'counsel',
     roleLine: '잠깐만요, 그 전에는 어땠는데요?',
-    tagline: '연하 동생, 되물어 가며 상황을 같이 짚어 봐요',
+    tagline: '질문 많은 연하 동생 · 사실과 추측 구분',
     mbti: 'ENTP',
-    does: ['빠른 리액션과 질문으로 상황을 같이 정리해요', '내 느낌과 실제로 있었던 일을 나눠서 봐요', '무조건 편들지 않고 지금 할 수 있는 행동을 짚어 줘요'],
+    does: ['판단을 바꿀 단서를 하나씩 물어봐요', '무조건 편들지 않고 솔직하게 말해요', '다음에 할 행동을 하나로 정리해줘요'],
     when: ['내가 예민한 건지 헷갈릴 때', '상황을 객관적으로 보고 싶을 때'],
     chips: ['썸', '연락', '사실 확인', '현실 점검'],
     asks: [
-      { icon: 'heart', label: '저한테도 관심이 있을까요?' },
-      { icon: 'send', label: '연락이 뜸해졌어요' },
-      { icon: 'refresh', label: '계속 만나는 게 맞을까요?' },
+      { icon: 'chat', label: '제가 잘못한 건가요?' },
+      { icon: 'users', label: '상대 행동이 이해가 안 돼요' },
+      { icon: 'heart', label: '썸인지 아닌지 헷갈려요' },
     ],
+    showcase: {
+      short: '소은',
+      sample: { user: '면접 봤다고 했는데 어땠냐고 안 물어봐요.', reply: '아, 진짜 서운한 건 그거였네요. 돌려 말하지 말고 이렇게요.', quote: '“오늘 면접 어땠는지 먼저 물어봐 줬으면 했어.”', after: '왜 안 물어봤냐고 따지는 것보다 이게 더 잘 전해져요.' },
+      note: { title: '대화 원문은 30일 뒤 자동으로 지워져요', body: 'AI 캐릭터의 의견이에요. 전문 상담이나 의료 진단을 대신하지 않아요.' },
+    },
     pricing: '하루 15번 대화 무료',
     image: 'soeun',
     emoji: '💁‍♀️',
@@ -140,16 +164,21 @@ export const CHARACTERS: Character[] = [
     name: '이성현',
     category: 'counsel',
     roleLine: '무슨 일 있어요?',
-    tagline: '연하 남동생, 남자 입장에서 솔직하게 말해 줘요',
+    tagline: '연하 남동생 · 남자 입장에서 본 현실 해석',
     mbti: 'INTP',
-    does: ['남자 입장에서 그 행동이 어떤 뜻일 수 있는지 설명해요', '관계 유지보다 나한테 괜찮은 선택인지 같이 봐요', '연애 얘기가 아니어도 편하게 얘기해요'],
+    does: ['남자 입장에서 상대 행동을 해석해줘요', '확인된 사실과 내 추측을 나눠서 봐요', '이 관계가 나에게 괜찮은지 같이 점검해요'],
     when: ['남자 마음을 모르겠을 때', '이 관계가 나한테 괜찮은지 헷갈릴 때'],
     chips: ['남자 입장', '썸', '재회', '현실 점검'],
     asks: [
-      { icon: 'users', label: '우리 무슨 사이인지 모르겠어요' },
-      { icon: 'send', label: '늘 저만 먼저 연락해요' },
-      { icon: 'refresh', label: '헤어진 사람에게 연락하고 싶어요' },
+      { icon: 'send', label: '연락이 줄었는데 마음이 식었을까요?' },
+      { icon: 'chat', label: '제가 너무 예민한 걸까요?' },
+      { icon: 'heart', label: '이 관계, 이대로 괜찮을까요?' },
     ],
+    showcase: {
+      short: '성현',
+      sample: { user: '전 애인한테 “잘 지내?”라고 왔어요.', reply: '다시 만날 마음이 없다면, 이 정도로 답해도 돼요.', quote: '“응, 잘 지내. 너도 잘 지냈으면 좋겠어.”', after: '끝에 “너는?”을 안 붙여도 반갑게 인사할 수 있어요.' },
+      note: { title: '대화 원문은 30일 뒤 자동으로 지워져요', body: 'AI 캐릭터의 의견이에요. 전문 상담이나 의료 진단을 대신하지 않아요.' },
+    },
     pricing: '하루 15번 대화 무료',
     image: 'seonghyun',
     emoji: '🤔',

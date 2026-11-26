@@ -37,3 +37,26 @@ describe('프로필 레이아웃 데이터 (7차 리뷰)', () => {
     expect(seohwa.asks![1].screen).toBe('compat');
   });
 });
+
+describe('상담 캐릭터 프로필 화면 (8차 리뷰 2026-11-26)', () => {
+  const four = ['hub-m', 'hub-f', 'seonghyun', 'soeun'].map((id) => CHARACTERS.find((c) => c.id === id)!);
+  it('상담 4인만 새 프로필 화면 데이터가 있다', () => {
+    expect(CHARACTERS.filter((c) => c.showcase).map((c) => c.id).sort()).toEqual(['hub-f', 'hub-m', 'seonghyun', 'soeun']);
+  });
+  it('노션 표의 문구: 역할 소개, 대화 예시 4개, 상담 특징 3개, 고민 카드 3개, 안내 박스', () => {
+    for (const c of four) {
+      expect(c.tagline, c.id).toContain(' · ');
+      expect(Object.values(c.showcase!.sample).every((x) => x.length > 0), c.id).toBe(true);
+      expect(c.showcase!.sample.quote, c.id).toMatch(/^“.*”$/);
+      expect(c.does, c.id).toHaveLength(3);
+      expect(c.asks, c.id).toHaveLength(3);
+      expect(c.name.endsWith(c.showcase!.short), c.id).toBe(true);
+    }
+    const goeun = four[1];
+    expect(goeun.tagline).toBe('결혼 준비 중인 선배 · 내 편에서 해결 방법');
+    expect(goeun.showcase!.sample.user).toBe('매번 제가 언제 볼지 물어보는 게 싫어요.');
+    expect(goeun.asks!.map((a) => a.label)).toEqual(['나만 먼저 연락하는 것 같아요', '싸우지 않고 마음을 전하고 싶어요', '결혼 이야기를 꺼내기 어려워요']);
+    expect(goeun.showcase!.note.title).toBe('대화 원문은 30일 뒤 자동으로 지워져요');
+    expect(four[0].showcase!.note.title).toBe('무료로 대화할 수 있어요');
+  });
+});
